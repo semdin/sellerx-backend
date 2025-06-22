@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: sellerx
+  datasource:
+    url: jdbc:postgresql://localhost:5434/sellerx_db?createDatabaseIfNotExist=true
+    username: postgres
+    password: 123123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
