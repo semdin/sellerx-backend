@@ -1,4 +1,4 @@
-package com.ecommerce.sellerx.dtos;
+package com.ecommerce.sellerx.users;
 
 import lombok.Data;
 
