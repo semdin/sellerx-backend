@@ -27,15 +27,46 @@ public class AuthController {
         var loginResult = authService.login(request);
 
         var refreshToken = loginResult.getRefreshToken().toString();
-        var cookie = new Cookie("refreshToken", refreshToken);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/auth/refresh");
-        cookie.setMaxAge(jwtConfig.getRefreshTokenExpiration());
-        cookie.setSecure(true);
-        response.addCookie(cookie);
+        var refresCookie = new Cookie("refreshToken", refreshToken);
+        refresCookie.setHttpOnly(true);
+        refresCookie.setPath("/auth/refresh");
+        refresCookie.setMaxAge(jwtConfig.getRefreshTokenExpiration());
+        refresCookie.setSecure(false);
+        response.addCookie(refresCookie);
+
+        var accessToken = loginResult.getAccessToken().toString();
+        var accessCookie = new Cookie("access_token", accessToken);
+        accessCookie.setHttpOnly(true);
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(jwtConfig.getAccessTokenExpiration());
+        accessCookie.setSecure(false);
+        response.addCookie(accessCookie);
 
         return new JwtResponse(loginResult.getAccessToken().toString());
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        // access_token cookie'sini sil
+        Cookie accessTokenCookie = new Cookie("access_token", null);
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(false); // Prod'da true olmalı
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(0); // Silinsin
+
+        // refreshToken cookie'sini sil
+        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(false); // Prod'da true olmalı
+        refreshTokenCookie.setPath("/auth/refresh");
+        refreshTokenCookie.setMaxAge(0); // Silinsin
+
+        response.addCookie(accessTokenCookie);
+        response.addCookie(refreshTokenCookie);
+
+        return ResponseEntity.ok().build();
+    }
+
 
     @PostMapping("/refresh")
     public JwtResponse refresh(@CookieValue(value = "refreshToken") String refreshToken) {
