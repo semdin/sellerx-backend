@@ -91,6 +91,84 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "Register Store",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"storeName\": \"Test Store\",\n  \"marketplace\": \"trendyol\",\n  \"credentials\": {\n    \"type\": \"trendyol\",\n    \"apiKey\": \"api-key\",\n    \"apiSecret\": \"api-secret\",\n    \"sellerId\": 123456,\n    \"Token\": \"jwt-token\"\n  }\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/stores",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["stores"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Stores",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/stores",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["stores"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Store By Id",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/stores/{{store_id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["stores", "{{store_id}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Store",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"storeName\": \"Güncellenmiş Store\",\n  \"marketplace\": \"trendyol\",\n  \"credentials\": {\n    \"type\": \"trendyol\",\n    \"apiKey\": \"yeni-api-key\",\n    \"apiSecret\": \"yeni-api-secret\",\n    \"sellerId\": 654321,\n    \"Token\": \"yeni-jwt-token\"\n  }\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/stores/{{store_id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["stores", "{{store_id}}"]
+        }
+      },
+      "response": []
     }
   ],
   "event": [
