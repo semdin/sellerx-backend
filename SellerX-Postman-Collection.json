@@ -132,9 +132,43 @@
       "response": []
     },
     {
+      "name": "Get My Stores",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/stores/my",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["stores", "my"]
+        }
+      },
+      "response": []
+    },
+    {
       "name": "Get Store By Id",
       "request": {
         "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/stores/{{store_id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["stores", "{{store_id}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Store",
+      "request": {
+        "method": "DELETE",
         "header": [
           { "key": "Authorization", "value": "Bearer {{access_token}}" }
         ],

@@ -12,6 +12,13 @@ public class StoreService {
     private final StoreRepository storeRepository;
     private final StoreMapper storeMapper;
 
+    public List<StoreDto> getStoresByUser(com.ecommerce.sellerx.users.User user) {
+        return storeRepository.findAllByUser(user)
+                .stream()
+                .map(storeMapper::toDto)
+                .toList();
+    }
+
     public List<StoreDto> getAllStores(String sortBy) {
         if (!List.of("storeName", "marketplace").contains(sortBy))
             sortBy = "storeName";
@@ -43,8 +50,11 @@ public class StoreService {
         return storeMapper.toDto(store);
     }
 
-    public void deleteStore(UUID storeId) {
+    public void deleteStoreByUser(UUID storeId, com.ecommerce.sellerx.users.User user) {
         var store = storeRepository.findById(storeId).orElseThrow(StoreNotFoundException::new);
-        storeRepository.delete(store);
+        if (!store.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Store does not belong to user");
+        }
+        storeRepository.deleteByIdAndUser(storeId, user);
     }
 }

@@ -16,5 +16,5 @@ spring:
     locations: classpath:db/migration
   jwt:
     secret: ${JWT_SECRET}
-    accessTokenExpiration: 900 # 15m
+    accessTokenExpiration: 20 # 5m - test için
     refreshTokenExpiration: 604800 # 7d
