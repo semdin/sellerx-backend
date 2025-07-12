@@ -29,7 +29,7 @@ public class AuthController {
         var refreshToken = loginResult.getRefreshToken().toString();
         var refresCookie = new Cookie("refreshToken", refreshToken);
         refresCookie.setHttpOnly(true);
-        refresCookie.setPath("/auth/refresh");
+        refresCookie.setPath("/");
         refresCookie.setMaxAge(jwtConfig.getRefreshTokenExpiration());
         refresCookie.setSecure(false);
         response.addCookie(refresCookie);
@@ -69,8 +69,14 @@ public class AuthController {
 
 
     @PostMapping("/refresh")
-    public JwtResponse refresh(@CookieValue(value = "refreshToken") String refreshToken) {
+    public JwtResponse refresh(@CookieValue(value = "refreshToken") String refreshToken, HttpServletResponse response) {
         var accessToken = authService.refreshAccessToken(refreshToken);
+        var accessCookie = new Cookie("access_token", accessToken.toString());
+        accessCookie.setHttpOnly(true);
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(jwtConfig.getAccessTokenExpiration());
+        accessCookie.setSecure(false); // Prod'da true olmalı
+        response.addCookie(accessCookie);
         return new JwtResponse(accessToken.toString());
     }
 
