@@ -259,6 +259,23 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "Test Trendyol Connection",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/trendyol/test-connection",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["trendyol", "test-connection"]
+        }
+      },
+      "response": []
     }
   ],
   "event": [
