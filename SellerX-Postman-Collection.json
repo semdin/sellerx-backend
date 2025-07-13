@@ -259,23 +259,6 @@
         }
       },
       "response": []
-    },
-    {
-      "name": "Get Dashboard Stats",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/dashboard/stats",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["dashboard", "stats"]
-        }
-      },
-      "response": []
     }
   ],
   "event": [
