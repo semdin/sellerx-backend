@@ -1,5 +1,8 @@
 package com.ecommerce.sellerx.users;
 
+import com.ecommerce.sellerx.auth.JwtService;
+import com.ecommerce.sellerx.stores.StoreService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -9,12 +12,15 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @AllArgsConstructor
 @RequestMapping("/users")
 public class UserController {
     private final UserService userService;
+    private final JwtService jwtService;
+    private final StoreService storeService;
 
     @GetMapping
     public Iterable<UserDto> getAllUsers(
@@ -55,6 +61,51 @@ public class UserController {
             @PathVariable Long id,
             @RequestBody ChangePasswordRequest request) {
         userService.changePassword(id, request);
+    }
+
+    @GetMapping("/selected-store")
+    public ResponseEntity<?> getSelectedStore(HttpServletRequest request) {
+        try {
+            Long userId = jwtService.getUserIdFromToken(request);
+            UUID selectedStoreId = userService.getSelectedStoreId(userId);
+            return ResponseEntity.ok(Map.of("selectedStoreId", selectedStoreId != null ? selectedStoreId.toString() : ""));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid token"));
+        }
+    }
+
+    @PostMapping("/selected-store")
+    public ResponseEntity<?> setSelectedStore(@RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
+        try {
+            Long userId = jwtService.getUserIdFromToken(httpRequest);
+            String storeIdString = request.get("storeId");
+            
+            if (storeIdString == null || storeIdString.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Store ID is required"));
+            }
+            
+            UUID storeId;
+            try {
+                storeId = UUID.fromString(storeIdString);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid store ID format"));
+            }
+            
+            // Store'un bu user'a ait olduğunu kontrol et
+            if (!storeService.isStoreOwnedByUser(storeId, userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "Access denied"));
+            }
+            
+            // User'ın selected store'unu güncelle
+            userService.setSelectedStoreId(userId, storeId);
+            
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid token"));
+        }
     }
 
     @ExceptionHandler(DuplicateUserException.class)

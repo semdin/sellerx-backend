@@ -1,5 +1,68 @@
 # sellerx-backend
 
+## 🏪 Store Selection System
+
+Bu backend'e store selection (mağaza seçme) sistemi eklenmiştir. Bu sistem kullanıcıların birden fazla mağazası olduğunda, hangi mağaza ile çalışmak istediklerini seçmelerini sağlar.
+
+### Yeni Endpoint'ler:
+
+#### 1. Seçili Mağazayı Getir
+
+- **Endpoint:** `GET /users/selected-store`
+- **Headers:** `Authorization: Bearer {token}`
+- **Response:**
+  ```json
+  {
+    "selectedStoreId": "store-uuid" // veya "" eğer seçili değilse
+  }
+  ```
+
+#### 2. Mağaza Seç
+
+- **Endpoint:** `POST /users/selected-store`
+- **Headers:** `Authorization: Bearer {token}`
+- **Body (JSON):**
+  ```json
+  {
+    "storeId": "store-uuid"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+#### 3. Dashboard İstatistikleri (Örnek)
+
+- **Endpoint:** `GET /dashboard/stats`
+- **Headers:** `Authorization: Bearer {token}`
+- **Response:**
+  ```json
+  {
+    "storeId": "selected-store-uuid",
+    "totalOrders": 150,
+    "totalRevenue": 45000.0,
+    "pendingOrders": 12,
+    "lowStockProducts": 5
+  }
+  ```
+
+### 🔧 Database Değişiklikleri:
+
+- `users` tablosuna `selected_store_id` kolonu eklendi
+- Foreign key constraint ile `stores` tablosuna bağlandı
+
+### 🚀 Özellikler:
+
+- ✅ Kullanıcı ilk mağazasını oluştururken otomatik seçili hale gelir
+- ✅ Mağaza sahipliği kontrolü yapılır
+- ✅ JWT token ile kimlik doğrulama
+- ✅ Tüm store-specific endpoint'ler seçili mağaza ile çalışır
+
+---
+
 ## API Kullanımı (Authentication & Kullanıcı İşlemleri)
 
 ### 1. Kayıt Ol (Register)

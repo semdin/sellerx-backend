@@ -1,5 +1,6 @@
 package com.ecommerce.sellerx.stores;
 
+import com.ecommerce.sellerx.users.UserService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.util.UUID;
 public class StoreController {
     private final StoreService storeService;
     private final UserRepository userRepository;
+    private final UserService userService;
 
     @GetMapping("/my")
     public Iterable<StoreDto> getMyStores() {
@@ -46,6 +48,12 @@ public class StoreController {
         Long userId = (Long) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userRepository.findById(userId).orElseThrow(com.ecommerce.sellerx.users.UserNotFoundException::new);
         var storeDto = storeService.registerStore(request, user);
+        
+        // Eğer kullanıcının hiç seçili store'u yoksa, yeni oluşturulan store'u seçili yap
+        if (userService.getSelectedStoreId(userId) == null) {
+            userService.setSelectedStoreId(userId, storeDto.getId());
+        }
+        
         var uri = uriBuilder.path("/stores/{id}").buildAndExpand(storeDto.getId()).toUri();
         return ResponseEntity.created(uri).body(storeDto);
     }

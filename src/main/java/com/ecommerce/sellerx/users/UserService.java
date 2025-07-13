@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
+import java.util.UUID;
 
 @AllArgsConstructor
 @Service
@@ -64,6 +65,19 @@ public class UserService {
         }
 
         user.setPassword(request.getNewPassword());
+        userRepository.save(user);
+    }
+
+    public UUID getSelectedStoreId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException());
+        return user.getSelectedStoreId();
+    }
+
+    public void setSelectedStoreId(Long userId, UUID storeId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException());
+        user.setSelectedStoreId(storeId);
         userRepository.save(user);
     }
 }

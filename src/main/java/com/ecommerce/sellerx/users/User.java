@@ -3,6 +3,8 @@ package com.ecommerce.sellerx.users;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.UUID;
+
 @Setter
 @Getter
 @AllArgsConstructor
@@ -30,6 +32,9 @@ public class User {
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @Column(name = "selected_store_id")
+    private UUID selectedStoreId;
 
     @Override
     public String toString() {

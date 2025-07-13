@@ -6,6 +6,7 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Date;
 
@@ -50,6 +51,19 @@ public class JwtService {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }    public Long getUserIdFromToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("JWT token not found");
+        }
+        
+        String token = authHeader.substring(7);
+        Jwt jwt = parseToken(token);
+        if (jwt == null) {
+            throw new RuntimeException("Invalid JWT token");
+        }
+        
+        return jwt.getUserId();
     }
 }
 

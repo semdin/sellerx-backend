@@ -203,6 +203,79 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "Get Selected Store",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/users/selected-store",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["users", "selected-store"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Set Selected Store",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"storeId\": \"{{store_id}}\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/users/selected-store",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["users", "selected-store"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Dashboard Stats",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/dashboard/stats",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["dashboard", "stats"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Dashboard Stats",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/dashboard/stats",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["dashboard", "stats"]
+        }
+      },
+      "response": []
     }
   ],
   "event": [
@@ -213,10 +286,27 @@
           "if (pm.response.code === 200 && pm.request.url.path[1] === 'login') {",
           "    var json = pm.response.json();",
           "    pm.collectionVariables.set('access_token', json.token);",
+          "}",
+          "",
+          "if (pm.response.code === 201 && pm.request.url.path[0] === 'stores') {",
+          "    var json = pm.response.json();",
+          "    pm.collectionVariables.set('store_id', json.id);",
           "}"
         ],
         "type": "text/javascript"
       }
+    }
+  ],
+  "variable": [
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "store_id",
+      "value": "",
+      "type": "string"
     }
   ]
 }

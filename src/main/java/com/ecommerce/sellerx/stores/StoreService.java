@@ -57,4 +57,18 @@ public class StoreService {
         }
         storeRepository.deleteByIdAndUser(storeId, user);
     }
+
+    public boolean isStoreOwnedByUser(UUID storeId, Long userId) {
+        var store = storeRepository.findById(storeId).orElse(null);
+        return store != null && store.getUser().getId().equals(userId);
+    }
+
+    public boolean isStoreOwnedByUser(String storeIdString, Long userId) {
+        try {
+            UUID storeId = UUID.fromString(storeIdString);
+            return isStoreOwnedByUser(storeId, userId);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
 }
