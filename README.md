@@ -13,7 +13,7 @@ Bu backend'e store selection (mağaza seçme) sistemi eklenmiştir. Bu sistem ku
 - **Response:**
   ```json
   {
-    "selectedStoreId": "store-uuid" // veya "" eğer seçili değilse
+    "selectedStoreId": "store-uuid" // Seçili mağaza UUID'si, seçili değilse boş string
   }
   ```
 
@@ -24,13 +24,13 @@ Bu backend'e store selection (mağaza seçme) sistemi eklenmiştir. Bu sistem ku
 - **Body (JSON):**
   ```json
   {
-    "storeId": "store-uuid"
+    "storeId": "store-uuid" // Seçilmek istenen mağaza UUID'si
   }
   ```
 - **Response:**
   ```json
   {
-    "success": true
+    "success": true // İşlem başarılı olduğunda true döner
   }
   ```
 
@@ -41,65 +41,71 @@ Bu backend'e store selection (mağaza seçme) sistemi eklenmiştir. Bu sistem ku
 - **Response:**
   ```json
   {
-    "storeId": "selected-store-uuid",
+    "storeId": "selected-store-uuid", // Seçili mağaza ID'si
     "today": {
-      "date": "15 Aralık 2024",
-      "revenue": 694.06,
-      "currency": "TL",
-      "orders": 51,
-      "units": 54,
-      "returns": 6,
-      "adCost": 4.31,
-      "estimatedPayment": 430.43,
-      "grossProfit": 184.66,
-      "netProfit": 33.66,
+      "date": "15 Aralık 2024", // Bugünün tarihi
+      "revenue": 694.06, // Günlük toplam ciro
+      "currency": "TL", // Para birimi
+      "orders": 51, // Net sipariş sayısı
+      "units": 54, // Toplam satılan birim
+      "returns": 6, // İade sayısı
+      "adCost": 4.31, // Reklam maliyeti
+      "estimatedPayment": 430.43, // Tahmini ödeme tutarı
+      "grossProfit": 184.66, // Brüt kar
+      "netProfit": 33.66, // Net kar
       "details": {
-        "grossRevenue": 694.06,
-        "grossSalesCount": 54,
-        "netRevenue": 694.06,
-        "netSalesCount": 51,
-        "adExpenses": -4.31,
+        "grossRevenue": 694.06, // Brüt ciro
+        "grossSalesCount": 54, // Brüt satış adedi
+        "netRevenue": 694.06, // Net ciro
+        "netSalesCount": 51, // Net satış adedi
+        "adExpenses": -4.31, // Reklam giderleri
         "couponDetails": {
-          "total": 0.00,
-          "adSpending": -0.81,
-          "discount": 0.00,
-          "coupon": 0.00
+          "total": 0.0, // Toplam kupon tutarı
+          "adSpending": -0.81, // Reklam harcaması
+          "discount": 0.0, // İndirim tutarı
+          "coupon": 0.0 // Kupon tutarı
         },
-        "productCost": -103.68,
-        "shippingCost": -25.50,
-        "returnCost": -12.00,
-        "otherExpenses": -8.00,
+        "productCost": -103.68, // Ürün maliyeti
+        "shippingCost": -25.5, // Kargo maliyeti
+        "returnCost": -12.0, // İade maliyeti
+        "otherExpenses": -8.0, // Diğer giderler
         "internationalDetails": {
-          "total": 0.00,
-          "internationalServiceFee": 0.00,
-          "internationalOperationFee": 0.00,
-          "termDelayFee": 0.00,
-          "platformServiceFee": 0.00,
-          "invoiceCounterSalesFee": 0.00,
-          "supplyFailureFee": 0.00,
-          "azInternationalOperationFee": 0.00,
-          "azPlatformServiceFee": 0.00,
-          "eCommerceWithholdingExpense": 0.00
+          "total": 0.0, // Toplam yurt dışı operasyon bedeli
+          "internationalServiceFee": 0.0, // Uluslararası hizmet bedeli
+          "internationalOperationFee": 0.0, // Yurt dışı operasyon bedeli
+          "termDelayFee": 0.0, // Termin gecikme bedeli
+          "platformServiceFee": 0.0, // Platform hizmet bedeli
+          "invoiceCounterSalesFee": 0.0, // Fatura kontör satış bedeli
+          "supplyFailureFee": 0.0, // Tedarik edememe bedeli
+          "azInternationalOperationFee": 0.0, // AZ-Yurtdışı operasyon bedeli
+          "azPlatformServiceFee": 0.0, // AZ-Platform hizmet bedeli
+          "eCommerceWithholdingExpense": 0.0 // E-Ticaret stopaj gideri
         },
-        "extraExpenses": -3.50,
+        "extraExpenses": -3.5, // Ekstra giderler
         "packagingDetails": {
-          "total": 1.00,
-          "officeExpense": 0.00,
-          "packaging": 1.00,
-          "accountingEtc": 2.00
+          "total": 1.0, // Toplam ambalaj gideri
+          "officeExpense": 0.0, // Ofis gideri
+          "packaging": 1.0, // Ambalaj maliyeti
+          "accountingEtc": 2.0 // Muhasebe vb. giderler
         },
-        "trendyolCommissionAmount": -104.11,
-        "vatDifference": -15.20,
-        "trendyolCommissionRate": 15.0,
-        "returnRate": 11.11,
-        "netProfit": 33.66,
-        "roi": 32.46,
-        "profitMargin": 4.85
+        "trendyolCommissionAmount": -104.11, // Trendyol komisyon tutarı
+        "vatDifference": -15.2, // KDV farkı / KDV gideri
+        "trendyolCommissionRate": 15.0, // Trendyol komisyon oranı (%)
+        "returnRate": 11.11, // İade oranı (%)
+        "netProfit": 33.66, // Net kâr
+        "roi": 32.46, // Yatırım getirisi (ROI) (%)
+        "profitMargin": 4.85 // Kâr marjı (%)
       }
     },
-    "yesterday": { ... },
-    "monthToDate": { ... },
-    "lastMonth": { ... }
+    "yesterday": {
+      /* Dün için aynı yapıda veriler */
+    },
+    "monthToDate": {
+      /* Aya kadar için aynı yapıda veriler */
+    },
+    "lastMonth": {
+      /* Geçen ay için aynı yapıda veriler */
+    }
   }
   ```
 
@@ -159,9 +165,9 @@ Bu backend'e store selection (mağaza seçme) sistemi eklenmiştir. Bu sistem ku
 - **Body (JSON):**
   ```json
   {
-    "name": "Mehmet",
-    "email": "mehmet@example.com",
-    "password": "123456"
+    "name": "Mehmet", // Kullanıcı adı
+    "email": "mehmet@example.com", // E-posta adresi (benzersiz olmalı)
+    "password": "123456" // Şifre (en az 6 karakter)
   }
   ```
 - **Açıklama:** Herkese açık. Yeni kullanıcı oluşturur.
@@ -172,8 +178,8 @@ Bu backend'e store selection (mağaza seçme) sistemi eklenmiştir. Bu sistem ku
 - **Body (JSON):**
   ```json
   {
-    "email": "mehmet@example.com",
-    "password": "123456"
+    "email": "mehmet@example.com", // Kayıtlı e-posta adresi
+    "password": "123456" // Kullanıcının şifresi
   }
   ```
 - **Açıklama:** Doğru bilgilerle giriş yapınca response olarak access token döner. Ayrıca refreshToken cookie olarak gelir.
