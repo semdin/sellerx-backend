@@ -48,20 +48,19 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse response) {
         // access_token cookie'sini sil
-        Cookie accessTokenCookie = new Cookie("access_token", null);
+        Cookie accessTokenCookie = new Cookie("access_token", "");
         accessTokenCookie.setHttpOnly(true);
         accessTokenCookie.setSecure(false); // Prod'da true olmalı
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(0); // Silinsin
+        response.addCookie(accessTokenCookie);
 
-        // refreshToken cookie'sini sil
-        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
+        // refreshToken cookie'sini sil - path "/" olmalı (login sırasındaki ile aynı)
+        Cookie refreshTokenCookie = new Cookie("refreshToken", "");
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setSecure(false); // Prod'da true olmalı
-        refreshTokenCookie.setPath("/auth/refresh");
+        refreshTokenCookie.setPath("/"); // Login sırasında "/" kullanıldı, logout'ta da aynı olmalı
         refreshTokenCookie.setMaxAge(0); // Silinsin
-
-        response.addCookie(accessTokenCookie);
         response.addCookie(refreshTokenCookie);
 
         return ResponseEntity.ok().build();
