@@ -66,9 +66,10 @@ public class StoreController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteStore(@PathVariable UUID id) {
+    public ResponseEntity<Void> deleteStore(@PathVariable UUID id) {
         Long userId = (Long) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userRepository.findById(userId).orElseThrow(com.ecommerce.sellerx.users.UserNotFoundException::new);
         storeService.deleteStoreByUser(id, user);
+        return ResponseEntity.noContent().build();
     }
 }
