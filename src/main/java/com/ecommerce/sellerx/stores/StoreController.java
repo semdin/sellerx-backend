@@ -60,7 +60,9 @@ public class StoreController {
 
     @PutMapping("/{id}")
     public StoreDto updateStore(@PathVariable UUID id, @RequestBody UpdateStoreRequest request) {
-        return storeService.updateStore(id, request);
+        Long userId = (Long) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userRepository.findById(userId).orElseThrow(com.ecommerce.sellerx.users.UserNotFoundException::new);
+        return storeService.updateStoreByUser(id, request, user);
     }
 
     @DeleteMapping("/{id}")

@@ -3,6 +3,7 @@ package com.ecommerce.sellerx.stores;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,6 +12,7 @@ import java.util.UUID;
 public class StoreService {
     private final StoreRepository storeRepository;
     private final StoreMapper storeMapper;
+    private final com.ecommerce.sellerx.users.UserService userService;
 
     public List<StoreDto> getStoresByUser(com.ecommerce.sellerx.users.User user) {
         return storeRepository.findAllByUser(user)
@@ -50,11 +52,29 @@ public class StoreService {
         return storeMapper.toDto(store);
     }
 
+    public StoreDto updateStoreByUser(UUID storeId, UpdateStoreRequest request, com.ecommerce.sellerx.users.User user) {
+        var store = storeRepository.findById(storeId).orElseThrow(StoreNotFoundException::new);
+        if (!store.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Store does not belong to user");
+        }
+        storeMapper.update(request, store);
+        store.setUpdatedAt(java.time.LocalDateTime.now());
+        storeRepository.save(store);
+        return storeMapper.toDto(store);
+    }
+
+    @Transactional
     public void deleteStoreByUser(UUID storeId, com.ecommerce.sellerx.users.User user) {
         var store = storeRepository.findById(storeId).orElseThrow(StoreNotFoundException::new);
         if (!store.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Store does not belong to user");
         }
+        
+        // Eğer silinecek store kullanıcının seçili store'u ise, seçili store'u null yap
+        if (user.getSelectedStoreId() != null && user.getSelectedStoreId().equals(storeId)) {
+            userService.setSelectedStoreId(user.getId(), null);
+        }
+        
         storeRepository.deleteByIdAndUser(storeId, user);
     }
 
