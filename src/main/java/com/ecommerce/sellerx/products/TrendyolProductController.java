@@ -1,6 +1,7 @@
 package com.ecommerce.sellerx.products;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +26,22 @@ public class TrendyolProductController {
     
     @GetMapping("/store/{storeId}")
     @PreAuthorize("@userSecurityRules.canAccessStore(authentication, #storeId)")
-    public ResponseEntity<List<TrendyolProductDto>> getProductsByStore(@PathVariable UUID storeId) {
+    public ResponseEntity<Page<TrendyolProductDto>> getProductsByStoreWithPagination(
+            @PathVariable UUID storeId,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "50") Integer size,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "onSale") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+        
+        Page<TrendyolProductDto> products = trendyolProductService.getProductsByStoreWithPagination(
+                storeId, page, size, search, sortBy, sortDirection);
+        return ResponseEntity.ok(products);
+    }
+    
+    @GetMapping("/store/{storeId}/all")
+    @PreAuthorize("@userSecurityRules.canAccessStore(authentication, #storeId)")
+    public ResponseEntity<List<TrendyolProductDto>> getAllProductsByStore(@PathVariable UUID storeId) {
         List<TrendyolProductDto> products = trendyolProductService.getProductsByStore(storeId);
         return ResponseEntity.ok(products);
     }

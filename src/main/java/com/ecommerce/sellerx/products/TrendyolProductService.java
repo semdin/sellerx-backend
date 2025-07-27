@@ -7,6 +7,10 @@ import com.ecommerce.sellerx.stores.TrendyolCredentials;
 import com.ecommerce.sellerx.stores.MarketplaceCredentials;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -290,6 +294,39 @@ public class TrendyolProductService {
         
         List<TrendyolProduct> products = trendyolProductRepository.findByStoreId(storeId);
         return productMapper.toDtoList(products);
+    }
+    
+    public Page<TrendyolProductDto> getProductsByStoreWithPagination(UUID storeId, 
+                                                                    Integer page, 
+                                                                    Integer size, 
+                                                                    String search, 
+                                                                    String sortBy, 
+                                                                    String sortDirection) {
+        if (!storeRepository.existsById(storeId)) {
+            throw new StoreNotFoundException("Store not found");
+        }
+        
+        // Default values
+        int pageNumber = page != null ? page : 0;
+        int pageSize = size != null ? size : 50;
+        String sortField = sortBy != null ? sortBy : "onSale";
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection) ? 
+            Sort.Direction.ASC : Sort.Direction.DESC;
+        
+        // Create pageable with sorting
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, sortField));
+        
+        Page<TrendyolProduct> productsPage;
+        
+        // Search or get all
+        if (search != null && !search.trim().isEmpty()) {
+            productsPage = trendyolProductRepository.findByStoreIdAndSearch(storeId, search.trim(), pageable);
+        } else {
+            productsPage = trendyolProductRepository.findByStoreId(storeId, pageable);
+        }
+        
+        // Convert to DTOs while preserving pagination info
+        return productsPage.map(productMapper::toDto);
     }
     
     public TrendyolProductDto updateCostAndStock(UUID productId, UpdateCostAndStockRequest request) {

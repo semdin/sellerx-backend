@@ -1,5 +1,7 @@
 package com.ecommerce.sellerx.products;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +15,19 @@ import java.util.UUID;
 public interface TrendyolProductRepository extends JpaRepository<TrendyolProduct, UUID> {
     
     List<TrendyolProduct> findByStoreId(UUID storeId);
+    
+    // Pagination support for store products
+    Page<TrendyolProduct> findByStoreId(UUID storeId, Pageable pageable);
+    
+    // Search with pagination
+    @Query("SELECT tp FROM TrendyolProduct tp WHERE tp.store.id = :storeId " +
+           "AND (LOWER(tp.title) LIKE LOWER(CONCAT('%', :search, '%')) " +
+           "OR LOWER(tp.barcode) LIKE LOWER(CONCAT('%', :search, '%')) " +
+           "OR LOWER(tp.brand) LIKE LOWER(CONCAT('%', :search, '%')) " +
+           "OR LOWER(tp.categoryName) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<TrendyolProduct> findByStoreIdAndSearch(@Param("storeId") UUID storeId, 
+                                                @Param("search") String search, 
+                                                Pageable pageable);
     
     Optional<TrendyolProduct> findByStoreIdAndProductId(UUID storeId, String productId);
     
