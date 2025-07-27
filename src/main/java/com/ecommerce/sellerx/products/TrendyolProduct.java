@@ -72,9 +72,29 @@ public class TrendyolProduct {
     @Column(name = "vat_rate")
     private Integer vatRate;
     
-    @Column(name = "quantity")
+    @Column(name = "trendyol_quantity")
     @Builder.Default
-    private Integer quantity = 0;
+    private Integer trendyolQuantity = 0;
+    
+    @Column(name = "approved")
+    @Builder.Default
+    private Boolean approved = false;
+    
+    @Column(name = "archived")
+    @Builder.Default
+    private Boolean archived = false;
+    
+    @Column(name = "blacklisted")
+    @Builder.Default
+    private Boolean blacklisted = false;
+    
+    @Column(name = "rejected")
+    @Builder.Default
+    private Boolean rejected = false;
+    
+    @Column(name = "on_sale")
+    @Builder.Default
+    private Boolean onSale = false;
     
     @Type(JsonBinaryType.class)
     @Column(name = "cost_and_stock_info", columnDefinition = "jsonb")

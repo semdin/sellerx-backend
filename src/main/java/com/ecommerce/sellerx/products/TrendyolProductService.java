@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -120,7 +119,14 @@ public class TrendyolProductService {
         product.setDimensionalWeight(apiProduct.getDimensionalWeight());
         product.setSalePrice(apiProduct.getSalePrice());
         product.setVatRate(apiProduct.getVatRate());
-        product.setQuantity(apiProduct.getQuantity() != null ? apiProduct.getQuantity() : 0);
+        product.setTrendyolQuantity(apiProduct.getQuantity() != null ? apiProduct.getQuantity() : 0);
+        
+        // Set status fields
+        product.setApproved(apiProduct.getApproved() != null ? apiProduct.getApproved() : false);
+        product.setArchived(apiProduct.getArchived() != null ? apiProduct.getArchived() : false);
+        product.setBlacklisted(apiProduct.getBlacklisted() != null ? apiProduct.getBlacklisted() : false);
+        product.setRejected(apiProduct.getRejected() != null ? apiProduct.getRejected() : false);
+        product.setOnSale(apiProduct.getOnsale() != null ? apiProduct.getOnsale() : false);
         
         // Set first image if available
         if (apiProduct.getImages() != null && !apiProduct.getImages().isEmpty()) {
@@ -161,9 +167,6 @@ public class TrendyolProductService {
         addOrMergeCostAndStockInfo(costAndStockList, newInfo);
         product.setCostAndStockInfo(costAndStockList);
         
-        // Update quantity with the latest value
-        product.setQuantity(request.getQuantity());
-        
         TrendyolProduct savedProduct = trendyolProductRepository.save(product);
         return productMapper.toDto(savedProduct);
     }
@@ -186,12 +189,6 @@ public class TrendyolProductService {
         
         addOrMergeCostAndStockInfo(costAndStockList, newInfo);
         product.setCostAndStockInfo(costAndStockList);
-        
-        // Calculate total quantity
-        int totalQuantity = costAndStockList.stream()
-                .mapToInt(CostAndStockInfo::getQuantity)
-                .sum();
-        product.setQuantity(totalQuantity);
         
         TrendyolProduct savedProduct = trendyolProductRepository.save(product);
         return productMapper.toDto(savedProduct);
@@ -224,12 +221,6 @@ public class TrendyolProductService {
         
         product.setCostAndStockInfo(costAndStockList);
         
-        // Recalculate total quantity
-        int totalQuantity = costAndStockList.stream()
-                .mapToInt(CostAndStockInfo::getQuantity)
-                .sum();
-        product.setQuantity(totalQuantity);
-        
         TrendyolProduct savedProduct = trendyolProductRepository.save(product);
         return productMapper.toDto(savedProduct);
     }
@@ -251,12 +242,6 @@ public class TrendyolProductService {
         }
         
         product.setCostAndStockInfo(costAndStockList);
-        
-        // Recalculate total quantity
-        int totalQuantity = costAndStockList.stream()
-                .mapToInt(CostAndStockInfo::getQuantity)
-                .sum();
-        product.setQuantity(totalQuantity);
         
         TrendyolProduct savedProduct = trendyolProductRepository.save(product);
         return productMapper.toDto(savedProduct);

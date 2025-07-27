@@ -140,6 +140,12 @@ public class TrendyolApiProductResponse {
         @JsonProperty("onsale")
         private Boolean onsale;
         
+        @JsonProperty("blacklisted")
+        private Boolean blacklisted;
+        
+        @JsonProperty("rejected")
+        private Boolean rejected;
+        
         @JsonProperty("productUrl")
         private String productUrl;
     }

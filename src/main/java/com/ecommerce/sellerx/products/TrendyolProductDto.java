@@ -31,7 +31,12 @@ public class TrendyolProductDto {
     private BigDecimal dimensionalWeight;
     private BigDecimal salePrice;
     private Integer vatRate;
-    private Integer quantity;
+    private Integer trendyolQuantity;
+    private Boolean approved;
+    private Boolean archived;
+    private Boolean blacklisted;
+    private Boolean rejected;
+    private Boolean onSale;
     private List<CostAndStockInfo> costAndStockInfo;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
