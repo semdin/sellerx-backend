@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Data
 @Builder
@@ -15,5 +15,5 @@ public class UpdateCostAndStockRequest {
     private Integer quantity;
     private Double unitCost;
     private Integer costVatRate;
-    private LocalDateTime stockDate;
+    private LocalDate stockDate;
 }

@@ -11,6 +11,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -148,16 +149,16 @@ public class TrendyolProductService {
                 .quantity(request.getQuantity())
                 .unitCost(request.getUnitCost())
                 .costVatRate(request.getCostVatRate())
-                .stockDate(request.getStockDate() != null ? request.getStockDate() : LocalDateTime.now())
+                .stockDate(request.getStockDate() != null ? request.getStockDate() : LocalDate.now())
                 .build();
         
-        // Add to existing list
+        // Add to existing list or merge with same date
         List<CostAndStockInfo> costAndStockList = product.getCostAndStockInfo();
         if (costAndStockList == null) {
             costAndStockList = new ArrayList<>();
         }
-        costAndStockList.add(newInfo);
         
+        addOrMergeCostAndStockInfo(costAndStockList, newInfo);
         product.setCostAndStockInfo(costAndStockList);
         
         // Update quantity with the latest value
@@ -165,6 +166,122 @@ public class TrendyolProductService {
         
         TrendyolProduct savedProduct = trendyolProductRepository.save(product);
         return productMapper.toDto(savedProduct);
+    }
+    
+    public TrendyolProductDto addStockInfo(UUID productId, AddStockInfoRequest request) {
+        TrendyolProduct product = trendyolProductRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        
+        CostAndStockInfo newInfo = CostAndStockInfo.builder()
+                .quantity(request.getQuantity())
+                .unitCost(request.getUnitCost())
+                .costVatRate(request.getCostVatRate())
+                .stockDate(request.getStockDate() != null ? request.getStockDate() : LocalDate.now())
+                .build();
+        
+        List<CostAndStockInfo> costAndStockList = product.getCostAndStockInfo();
+        if (costAndStockList == null) {
+            costAndStockList = new ArrayList<>();
+        }
+        
+        addOrMergeCostAndStockInfo(costAndStockList, newInfo);
+        product.setCostAndStockInfo(costAndStockList);
+        
+        // Calculate total quantity
+        int totalQuantity = costAndStockList.stream()
+                .mapToInt(CostAndStockInfo::getQuantity)
+                .sum();
+        product.setQuantity(totalQuantity);
+        
+        TrendyolProduct savedProduct = trendyolProductRepository.save(product);
+        return productMapper.toDto(savedProduct);
+    }
+    
+    public TrendyolProductDto updateStockInfoByDate(UUID productId, LocalDate stockDate, UpdateStockInfoRequest request) {
+        TrendyolProduct product = trendyolProductRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        
+        List<CostAndStockInfo> costAndStockList = product.getCostAndStockInfo();
+        if (costAndStockList == null) {
+            throw new RuntimeException("No stock info found for this product");
+        }
+        
+        // Find and update the specific date entry
+        boolean found = false;
+        for (CostAndStockInfo info : costAndStockList) {
+            if (info.getStockDate().equals(stockDate)) {
+                info.setQuantity(request.getQuantity());
+                info.setUnitCost(request.getUnitCost());
+                info.setCostVatRate(request.getCostVatRate());
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            throw new RuntimeException("No stock info found for date: " + stockDate);
+        }
+        
+        product.setCostAndStockInfo(costAndStockList);
+        
+        // Recalculate total quantity
+        int totalQuantity = costAndStockList.stream()
+                .mapToInt(CostAndStockInfo::getQuantity)
+                .sum();
+        product.setQuantity(totalQuantity);
+        
+        TrendyolProduct savedProduct = trendyolProductRepository.save(product);
+        return productMapper.toDto(savedProduct);
+    }
+    
+    public TrendyolProductDto deleteStockInfoByDate(UUID productId, LocalDate stockDate) {
+        TrendyolProduct product = trendyolProductRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        
+        List<CostAndStockInfo> costAndStockList = product.getCostAndStockInfo();
+        if (costAndStockList == null) {
+            throw new RuntimeException("No stock info found for this product");
+        }
+        
+        // Remove the specific date entry
+        boolean removed = costAndStockList.removeIf(info -> info.getStockDate().equals(stockDate));
+        
+        if (!removed) {
+            throw new RuntimeException("No stock info found for date: " + stockDate);
+        }
+        
+        product.setCostAndStockInfo(costAndStockList);
+        
+        // Recalculate total quantity
+        int totalQuantity = costAndStockList.stream()
+                .mapToInt(CostAndStockInfo::getQuantity)
+                .sum();
+        product.setQuantity(totalQuantity);
+        
+        TrendyolProduct savedProduct = trendyolProductRepository.save(product);
+        return productMapper.toDto(savedProduct);
+    }
+    
+    private void addOrMergeCostAndStockInfo(List<CostAndStockInfo> costAndStockList, CostAndStockInfo newInfo) {
+        // Check if there's already an entry for this date
+        for (CostAndStockInfo existingInfo : costAndStockList) {
+            if (existingInfo.getStockDate().equals(newInfo.getStockDate())) {
+                // Merge with existing entry (weighted average cost)
+                int totalQuantity = existingInfo.getQuantity() + newInfo.getQuantity();
+                double totalCost = (existingInfo.getQuantity() * existingInfo.getUnitCost()) + 
+                                  (newInfo.getQuantity() * newInfo.getUnitCost());
+                double weightedAverageCost = totalCost / totalQuantity;
+                
+                existingInfo.setQuantity(totalQuantity);
+                existingInfo.setUnitCost(weightedAverageCost);
+                // Keep the higher VAT rate (more conservative approach)
+                existingInfo.setCostVatRate(Math.max(existingInfo.getCostVatRate(), newInfo.getCostVatRate()));
+                return;
+            }
+        }
+        
+        // No existing entry for this date, add new one
+        costAndStockList.add(newInfo);
     }
     
     private TrendyolCredentials extractTrendyolCredentials(Store store) {

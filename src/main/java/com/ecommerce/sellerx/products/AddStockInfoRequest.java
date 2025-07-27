@@ -11,7 +11,7 @@ import java.time.LocalDate;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CostAndStockInfo {
+public class AddStockInfoRequest {
     private Integer quantity;
     private Double unitCost;
     private Integer costVatRate;

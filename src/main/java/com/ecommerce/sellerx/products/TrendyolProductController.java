@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,6 +36,34 @@ public class TrendyolProductController {
             @PathVariable UUID productId,
             @RequestBody UpdateCostAndStockRequest request) {
         TrendyolProductDto updatedProduct = trendyolProductService.updateCostAndStock(productId, request);
+        return ResponseEntity.ok(updatedProduct);
+    }
+    
+    @PostMapping("/{productId}/stock-info")
+    @PreAuthorize("@userSecurityRules.canAccessProduct(authentication, #productId)")
+    public ResponseEntity<TrendyolProductDto> addStockInfo(
+            @PathVariable UUID productId,
+            @RequestBody AddStockInfoRequest request) {
+        TrendyolProductDto updatedProduct = trendyolProductService.addStockInfo(productId, request);
+        return ResponseEntity.ok(updatedProduct);
+    }
+    
+    @PutMapping("/{productId}/stock-info/{stockDate}")
+    @PreAuthorize("@userSecurityRules.canAccessProduct(authentication, #productId)")
+    public ResponseEntity<TrendyolProductDto> updateStockInfoByDate(
+            @PathVariable UUID productId,
+            @PathVariable LocalDate stockDate,
+            @RequestBody UpdateStockInfoRequest request) {
+        TrendyolProductDto updatedProduct = trendyolProductService.updateStockInfoByDate(productId, stockDate, request);
+        return ResponseEntity.ok(updatedProduct);
+    }
+    
+    @DeleteMapping("/{productId}/stock-info/{stockDate}")
+    @PreAuthorize("@userSecurityRules.canAccessProduct(authentication, #productId)")
+    public ResponseEntity<TrendyolProductDto> deleteStockInfoByDate(
+            @PathVariable UUID productId,
+            @PathVariable LocalDate stockDate) {
+        TrendyolProductDto updatedProduct = trendyolProductService.deleteStockInfoByDate(productId, stockDate);
         return ResponseEntity.ok(updatedProduct);
     }
 }
