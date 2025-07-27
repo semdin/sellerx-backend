@@ -11,10 +11,12 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -29,19 +31,34 @@ public class TrendyolProductService {
     private final TrendyolProductMapper productMapper;
     private final RestTemplate restTemplate;
     
+    /**
+     * Helper method to compare BigDecimal values properly
+     * Handles null values and numeric equality regardless of scale
+     */
+    private boolean isBigDecimalChanged(BigDecimal existing, BigDecimal incoming) {
+        if (existing == null && incoming == null) {
+            return false;
+        }
+        if (existing == null || incoming == null) {
+            return true;
+        }
+        return existing.compareTo(incoming) != 0;
+    }
+    
     public SyncProductsResponse syncProductsFromTrendyol(UUID storeId) {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new StoreNotFoundException("Store not found"));
         
         TrendyolCredentials credentials = extractTrendyolCredentials(store);
         if (credentials == null) {
-            return new SyncProductsResponse(false, "Trendyol credentials not found", 0, 0, 0);
+            return new SyncProductsResponse(false, "Trendyol credentials not found", 0, 0, 0, 0);
         }
         
         try {
             int totalFetched = 0;
             int totalSaved = 0;
             int totalUpdated = 0;
+            int totalSkipped = 0;
             int page = 0;
             int size = 200;
             boolean hasMorePages = true;
@@ -62,12 +79,19 @@ public class TrendyolProductService {
                     if (apiResponse.getContent() != null) {
                         for (TrendyolApiProductResponse.TrendyolApiProduct apiProduct : apiResponse.getContent()) {
                             try {
-                                boolean isNew = saveOrUpdateProduct(store, apiProduct);
+                                ProductSyncResult result = saveOrUpdateProduct(store, apiProduct);
                                 totalFetched++;
-                                if (isNew) {
-                                    totalSaved++;
-                                } else {
-                                    totalUpdated++;
+                                
+                                switch (result) {
+                                    case NEW:
+                                        totalSaved++;
+                                        break;
+                                    case UPDATED:
+                                        totalUpdated++;
+                                        break;
+                                    case SKIPPED:
+                                        totalSkipped++;
+                                        break;
                                 }
                             } catch (Exception e) {
                                 log.error("Error processing product {}: {}", apiProduct.getId(), e.getMessage());
@@ -81,20 +105,22 @@ public class TrendyolProductService {
                 } else {
                     hasMorePages = false;
                     log.error("Failed to fetch products from Trendyol. Status: {}", response.getStatusCode());
-                    return new SyncProductsResponse(false, "Failed to fetch products from Trendyol", 0, 0, 0);
+                    return new SyncProductsResponse(false, "Failed to fetch products from Trendyol", 0, 0, 0, 0);
                 }
             }
             
-            return new SyncProductsResponse(true, "Products synced successfully", 
-                    totalFetched, totalSaved, totalUpdated);
+            return new SyncProductsResponse(true, 
+                    String.format("Products synced successfully. Fetched: %d, New: %d, Updated: %d, Skipped: %d", 
+                            totalFetched, totalSaved, totalUpdated, totalSkipped), 
+                    totalFetched, totalSaved, totalUpdated, totalSkipped);
             
         } catch (Exception e) {
             log.error("Error syncing products from Trendyol: ", e);
-            return new SyncProductsResponse(false, "Error syncing products: " + e.getMessage(), 0, 0, 0);
+            return new SyncProductsResponse(false, "Error syncing products: " + e.getMessage(), 0, 0, 0, 0);
         }
     }
     
-    private boolean saveOrUpdateProduct(Store store, TrendyolApiProductResponse.TrendyolApiProduct apiProduct) {
+    private ProductSyncResult saveOrUpdateProduct(Store store, TrendyolApiProductResponse.TrendyolApiProduct apiProduct) {
         // Check if product already exists
         boolean isNew = !trendyolProductRepository.existsByStoreIdAndProductId(store.getId(), apiProduct.getId());
         
@@ -106,6 +132,129 @@ public class TrendyolProductService {
                         .costAndStockInfo(new ArrayList<>())
                         .build());
         
+        // Check if any field has changed (only if product exists)
+        boolean hasChanges = isNew;
+        
+        if (!isNew) {
+            hasChanges = hasProductChanged(product, apiProduct);
+        }
+        
+        // Only update if there are changes
+        if (hasChanges) {
+            updateProductFields(product, apiProduct);
+            trendyolProductRepository.save(product);
+        }
+        
+        if (isNew) {
+            return ProductSyncResult.NEW;
+        } else if (hasChanges) {
+            return ProductSyncResult.UPDATED;
+        } else {
+            return ProductSyncResult.SKIPPED;
+        }
+    }
+    
+    private boolean hasProductChanged(TrendyolProduct existingProduct, TrendyolApiProductResponse.TrendyolApiProduct apiProduct) {
+        String productId = existingProduct.getProductId();
+        
+        // Check basic fields
+        if (!Objects.equals(existingProduct.getBarcode(), apiProduct.getBarcode())) {
+            log.debug("Product {} changed: barcode '{}' -> '{}'", productId, existingProduct.getBarcode(), apiProduct.getBarcode());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getTitle(), apiProduct.getTitle())) {
+            log.debug("Product {} changed: title", productId);
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getCategoryName(), apiProduct.getCategoryName())) {
+            log.debug("Product {} changed: categoryName '{}' -> '{}'", productId, existingProduct.getCategoryName(), apiProduct.getCategoryName());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getCreateDateTime(), apiProduct.getCreateDateTime())) {
+            log.debug("Product {} changed: createDateTime '{}' -> '{}'", productId, existingProduct.getCreateDateTime(), apiProduct.getCreateDateTime());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getHasActiveCampaign(), 
+                apiProduct.getHasActiveCampaign() != null ? apiProduct.getHasActiveCampaign() : false)) {
+            log.debug("Product {} changed: hasActiveCampaign '{}' -> '{}'", productId, existingProduct.getHasActiveCampaign(), apiProduct.getHasActiveCampaign());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getBrand(), apiProduct.getBrand())) {
+            log.debug("Product {} changed: brand '{}' -> '{}'", productId, existingProduct.getBrand(), apiProduct.getBrand());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getBrandId(), apiProduct.getBrandId())) {
+            log.debug("Product {} changed: brandId '{}' -> '{}'", productId, existingProduct.getBrandId(), apiProduct.getBrandId());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getProductMainId(), apiProduct.getProductMainId())) {
+            log.debug("Product {} changed: productMainId '{}' -> '{}'", productId, existingProduct.getProductMainId(), apiProduct.getProductMainId());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getProductUrl(), apiProduct.getProductUrl())) {
+            log.debug("Product {} changed: productUrl", productId);
+            return true;
+        }
+        if (isBigDecimalChanged(existingProduct.getDimensionalWeight(), apiProduct.getDimensionalWeight())) {
+            log.debug("Product {} changed: dimensionalWeight '{}' -> '{}'", productId, existingProduct.getDimensionalWeight(), apiProduct.getDimensionalWeight());
+            return true;
+        }
+        if (isBigDecimalChanged(existingProduct.getSalePrice(), apiProduct.getSalePrice())) {
+            log.debug("Product {} changed: salePrice '{}' -> '{}'", productId, existingProduct.getSalePrice(), apiProduct.getSalePrice());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getVatRate(), apiProduct.getVatRate())) {
+            log.debug("Product {} changed: vatRate '{}' -> '{}'", productId, existingProduct.getVatRate(), apiProduct.getVatRate());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getTrendyolQuantity(), 
+                apiProduct.getQuantity() != null ? apiProduct.getQuantity() : 0)) {
+            log.debug("Product {} changed: trendyolQuantity '{}' -> '{}'", productId, existingProduct.getTrendyolQuantity(), apiProduct.getQuantity());
+            return true;
+        }
+        
+        // Check status fields
+        if (!Objects.equals(existingProduct.getApproved(), 
+                apiProduct.getApproved() != null ? apiProduct.getApproved() : false)) {
+            log.debug("Product {} changed: approved '{}' -> '{}'", productId, existingProduct.getApproved(), apiProduct.getApproved());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getArchived(), 
+                apiProduct.getArchived() != null ? apiProduct.getArchived() : false)) {
+            log.debug("Product {} changed: archived '{}' -> '{}'", productId, existingProduct.getArchived(), apiProduct.getArchived());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getBlacklisted(), 
+                apiProduct.getBlacklisted() != null ? apiProduct.getBlacklisted() : false)) {
+            log.debug("Product {} changed: blacklisted '{}' -> '{}'", productId, existingProduct.getBlacklisted(), apiProduct.getBlacklisted());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getRejected(), 
+                apiProduct.getRejected() != null ? apiProduct.getRejected() : false)) {
+            log.debug("Product {} changed: rejected '{}' -> '{}'", productId, existingProduct.getRejected(), apiProduct.getRejected());
+            return true;
+        }
+        if (!Objects.equals(existingProduct.getOnSale(), 
+                apiProduct.getOnsale() != null ? apiProduct.getOnsale() : false)) {
+            log.debug("Product {} changed: onSale '{}' -> '{}'", productId, existingProduct.getOnSale(), apiProduct.getOnsale());
+            return true;
+        }
+        
+        // Check image
+        String newImage = null;
+        if (apiProduct.getImages() != null && !apiProduct.getImages().isEmpty()) {
+            newImage = apiProduct.getImages().get(0).getUrl();
+        }
+        if (!Objects.equals(existingProduct.getImage(), newImage)) {
+            log.debug("Product {} changed: image '{}' -> '{}'", productId, existingProduct.getImage(), newImage);
+            return true;
+        }
+        
+        log.debug("Product {} - No changes detected", productId);
+        return false; // No changes detected
+    }
+    
+    private void updateProductFields(TrendyolProduct product, TrendyolApiProductResponse.TrendyolApiProduct apiProduct) {
         // Update product fields
         product.setBarcode(apiProduct.getBarcode());
         product.setTitle(apiProduct.getTitle());
@@ -132,9 +281,6 @@ public class TrendyolProductService {
         if (apiProduct.getImages() != null && !apiProduct.getImages().isEmpty()) {
             product.setImage(apiProduct.getImages().get(0).getUrl());
         }
-        
-        trendyolProductRepository.save(product);
-        return isNew;
     }
     
     public List<TrendyolProductDto> getProductsByStore(UUID storeId) {

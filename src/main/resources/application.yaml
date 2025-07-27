@@ -19,6 +19,9 @@ spring:
     accessTokenExpiration: 3600 # 1h - test
     refreshTokenExpiration: 604800 # 7d
 
+logging:
+  level:
+    com.ecommerce.sellerx.products: DEBUG
 #server:
 #  port: 8443
 #  ssl:

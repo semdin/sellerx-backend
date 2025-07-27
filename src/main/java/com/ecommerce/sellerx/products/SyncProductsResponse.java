@@ -13,4 +13,5 @@ public class SyncProductsResponse {
     private int totalFetched;
     private int totalSaved;
     private int totalUpdated;
+    private int totalSkipped;
 }
