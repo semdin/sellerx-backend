@@ -10,7 +10,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductListResponse<T> {
-    private List<T> products;
     private Long totalElements;
     private Integer totalPages;
     private Integer currentPage;
@@ -19,4 +18,5 @@ public class ProductListResponse<T> {
     private Boolean isLast;
     private Boolean hasNext;
     private Boolean hasPrevious;
+    private List<T> products;
 }

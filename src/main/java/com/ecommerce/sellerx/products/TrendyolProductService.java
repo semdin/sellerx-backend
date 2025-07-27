@@ -296,9 +296,9 @@ public class TrendyolProductService {
         List<TrendyolProductDto> productDtos = productMapper.toDtoList(products);
         
         return new AllProductsResponse(
-            productDtos,
             productDtos.size(),
-            "Store products retrieved successfully"
+            "Store products retrieved successfully",
+            productDtos
         );
     }
     
@@ -337,7 +337,6 @@ public class TrendyolProductService {
                 .toList();
         
         return new ProductListResponse<>(
-            productDtos,
             productsPage.getTotalElements(),
             productsPage.getTotalPages(),
             productsPage.getNumber(),
@@ -345,7 +344,8 @@ public class TrendyolProductService {
             productsPage.isFirst(),
             productsPage.isLast(),
             productsPage.hasNext(),
-            productsPage.hasPrevious()
+            productsPage.hasPrevious(),
+            productDtos
         );
     }
     

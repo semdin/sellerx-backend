@@ -10,7 +10,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AllProductsResponse {
-    private List<TrendyolProductDto> products;
     private Integer totalCount;
     private String message;
+    private List<TrendyolProductDto> products;
 }
