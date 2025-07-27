@@ -31,7 +31,7 @@ public class StoreService {
     }
 
     public StoreDto getStore(UUID storeId) {
-        var store = storeRepository.findById(storeId).orElseThrow(StoreNotFoundException::new);
+        var store = storeRepository.findById(storeId).orElseThrow(() -> new StoreNotFoundException("Store not found"));
         return storeMapper.toDto(store);
     }
 
@@ -45,7 +45,7 @@ public class StoreService {
     }
 
     public StoreDto updateStore(UUID storeId, UpdateStoreRequest request) {
-        var store = storeRepository.findById(storeId).orElseThrow(StoreNotFoundException::new);
+        var store = storeRepository.findById(storeId).orElseThrow(() -> new StoreNotFoundException("Store not found"));
         storeMapper.update(request, store);
         store.setUpdatedAt(java.time.LocalDateTime.now());
         storeRepository.save(store);
@@ -53,7 +53,7 @@ public class StoreService {
     }
 
     public StoreDto updateStoreByUser(UUID storeId, UpdateStoreRequest request, com.ecommerce.sellerx.users.User user) {
-        var store = storeRepository.findById(storeId).orElseThrow(StoreNotFoundException::new);
+        var store = storeRepository.findById(storeId).orElseThrow(() -> new StoreNotFoundException("Store not found"));
         if (!store.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Store does not belong to user");
         }
@@ -65,7 +65,7 @@ public class StoreService {
 
     @Transactional
     public void deleteStoreByUser(UUID storeId, com.ecommerce.sellerx.users.User user) {
-        var store = storeRepository.findById(storeId).orElseThrow(StoreNotFoundException::new);
+        var store = storeRepository.findById(storeId).orElseThrow(() -> new StoreNotFoundException("Store not found"));
         if (!store.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Store does not belong to user");
         }

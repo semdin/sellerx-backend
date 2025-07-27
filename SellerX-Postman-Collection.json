@@ -276,6 +276,62 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "Sync Products from Trendyol",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/products/sync/{{store_id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["products", "sync", "{{store_id}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Products by Store",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/products/store/{{store_id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["products", "store", "{{store_id}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Product Cost and Stock",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"quantity\": 100,\n  \"unitCost\": 25.50,\n  \"costVatRate\": 18,\n  \"stockDate\": \"2024-01-15T10:00:00\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/products/{{product_id}}/cost-and-stock",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["products", "{{product_id}}", "cost-and-stock"]
+        }
+      },
+      "response": []
     }
   ],
   "event": [
@@ -291,6 +347,13 @@
           "if (pm.response.code === 201 && pm.request.url.path[0] === 'stores') {",
           "    var json = pm.response.json();",
           "    pm.collectionVariables.set('store_id', json.id);",
+          "}",
+          "",
+          "if (pm.response.code === 200 && pm.request.url.path[1] === 'store') {",
+          "    var json = pm.response.json();",
+          "    if (json.length > 0) {",
+          "        pm.collectionVariables.set('product_id', json[0].id);",
+          "    }",
           "}"
         ],
         "type": "text/javascript"
@@ -305,6 +368,11 @@
     },
     {
       "key": "store_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "product_id",
       "value": "",
       "type": "string"
     }

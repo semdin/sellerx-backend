@@ -1,5 +1,107 @@
 # sellerx-backend
 
+## 🛍️ Products Feature
+
+Mağazaların ürünlerini Trendyol'dan çekip database'e kaydetmek için ürün yönetimi sistemi eklenmiştir.
+
+### Yeni Ürün Endpoint'leri:
+
+#### 1. Trendyol'dan Ürünleri Senkronize Et
+
+- **Endpoint:** `POST /products/sync/{storeId}`
+- **Headers:** `Authorization: Bearer {token}`
+- **Response:**
+  ```json
+  {
+    "success": true,
+    "message": "Products synced successfully",
+    "totalFetched": 150,
+    "totalSaved": 100,
+    "totalUpdated": 50
+  }
+  ```
+
+#### 2. Mağazanın Ürünlerini Getir
+
+- **Endpoint:** `GET /products/store/{storeId}`
+- **Headers:** `Authorization: Bearer {token}`
+- **Response:**
+  ```json
+  [
+    {
+      "id": "product-uuid",
+      "storeId": "store-uuid",
+      "productId": "trendyol-product-id",
+      "barcode": "1234567890",
+      "title": "Ürün Adı",
+      "categoryName": "Kategori",
+      "brand": "Marka",
+      "salePrice": 150.0,
+      "vatRate": 18,
+      "quantity": 100,
+      "costAndStockInfo": [
+        {
+          "quantity": 100,
+          "unitCost": 75.0,
+          "costVatRate": 18,
+          "stockDate": "2024-01-15T10:00:00"
+        }
+      ]
+    }
+  ]
+  ```
+
+#### 3. Ürün Maliyet ve Stok Bilgisi Güncelle
+
+- **Endpoint:** `PUT /products/{productId}/cost-and-stock`
+- **Headers:** `Authorization: Bearer {token}`
+- **Body (JSON):**
+  ```json
+  {
+    "quantity": 100,
+    "unitCost": 75.5,
+    "costVatRate": 18,
+    "stockDate": "2024-01-15T10:00:00"
+  }
+  ```
+
+### Database Yapısı
+
+`trendyol_products` tablosu oluşturulmuştur:
+
+- `id`: UUID (Primary Key)
+- `store_id`: UUID (Foreign Key to stores table)
+- `product_id`: Trendyol ürün ID'si
+- `barcode`: Ürün barkodu
+- `title`: Ürün adı
+- `category_name`: Kategori adı
+- `brand`: Marka
+- `sale_price`: Satış fiyatı
+- `vat_rate`: KDV oranı
+- `quantity`: Mevcut stok miktarı
+- `cost_and_stock_info`: JSONB - Maliyet ve stok geçmişi
+
+### Maliyet ve Stok Yönetimi
+
+Ürünlerin maliyet ve stok bilgileri JSONB formatında saklanır:
+
+```json
+[
+  {
+    "quantity": 100,
+    "unitCost": 75.5,
+    "costVatRate": 18,
+    "stockDate": "2024-01-15T10:00:00Z"
+  }
+]
+```
+
+Bu yapı sayesinde:
+
+- Farklı tarihlerdeki maliyet değişiklikleri takip edilebilir
+- Stok hareketleri geçmişi tutulabilir
+- Detaylı kar/zarar analizleri yapılabilir
+
 ## 🏪 Store Selection System
 
 Bu backend'e store selection (mağaza seçme) sistemi eklenmiştir. Bu sistem kullanıcıların birden fazla mağazası olduğunda, hangi mağaza ile çalışmak istediklerini seçmelerini sağlar.
