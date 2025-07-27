@@ -266,16 +266,24 @@ public class TrendyolProductService {
         // Check if there's already an entry for this date
         for (CostAndStockInfo existingInfo : costAndStockList) {
             if (existingInfo.getStockDate().equals(newInfo.getStockDate())) {
-                // Merge with existing entry (weighted average cost)
-                int totalQuantity = existingInfo.getQuantity() + newInfo.getQuantity();
-                double totalCost = (existingInfo.getQuantity() * existingInfo.getUnitCost()) + 
-                                  (newInfo.getQuantity() * newInfo.getUnitCost());
+                // Merge with existing entry (weighted average for both cost and VAT rate)
+                int existingQuantity = existingInfo.getQuantity();
+                int newQuantity = newInfo.getQuantity();
+                int totalQuantity = existingQuantity + newQuantity;
+                
+                // Weighted average cost calculation
+                double totalCost = (existingQuantity * existingInfo.getUnitCost()) + 
+                                  (newQuantity * newInfo.getUnitCost());
                 double weightedAverageCost = totalCost / totalQuantity;
+                
+                // Weighted average VAT rate calculation
+                double totalVatWeighted = (existingQuantity * existingInfo.getCostVatRate()) + 
+                                         (newQuantity * newInfo.getCostVatRate());
+                double weightedAverageVatRate = totalVatWeighted / totalQuantity;
                 
                 existingInfo.setQuantity(totalQuantity);
                 existingInfo.setUnitCost(weightedAverageCost);
-                // Keep the higher VAT rate (more conservative approach)
-                existingInfo.setCostVatRate(Math.max(existingInfo.getCostVatRate(), newInfo.getCostVatRate()));
+                existingInfo.setCostVatRate((int) Math.round(weightedAverageVatRate));
                 return;
             }
         }
