@@ -1,13 +1,11 @@
 package com.ecommerce.sellerx.products;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -26,7 +24,7 @@ public class TrendyolProductController {
     
     @GetMapping("/store/{storeId}")
     @PreAuthorize("@userSecurityRules.canAccessStore(authentication, #storeId)")
-    public ResponseEntity<Page<TrendyolProductDto>> getProductsByStoreWithPagination(
+    public ResponseEntity<ProductListResponse<TrendyolProductDto>> getProductsByStoreWithPagination(
             @PathVariable UUID storeId,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "50") Integer size,
@@ -34,15 +32,15 @@ public class TrendyolProductController {
             @RequestParam(defaultValue = "onSale") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection) {
         
-        Page<TrendyolProductDto> products = trendyolProductService.getProductsByStoreWithPagination(
+        ProductListResponse<TrendyolProductDto> products = trendyolProductService.getProductsByStoreWithPagination(
                 storeId, page, size, search, sortBy, sortDirection);
         return ResponseEntity.ok(products);
     }
     
     @GetMapping("/store/{storeId}/all")
     @PreAuthorize("@userSecurityRules.canAccessStore(authentication, #storeId)")
-    public ResponseEntity<List<TrendyolProductDto>> getAllProductsByStore(@PathVariable UUID storeId) {
-        List<TrendyolProductDto> products = trendyolProductService.getProductsByStore(storeId);
+    public ResponseEntity<AllProductsResponse> getAllProductsByStore(@PathVariable UUID storeId) {
+        AllProductsResponse products = trendyolProductService.getAllProductsByStore(storeId);
         return ResponseEntity.ok(products);
     }
     

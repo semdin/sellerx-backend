@@ -302,7 +302,7 @@
           { "key": "Authorization", "value": "Bearer {{access_token}}" }
         ],
         "url": {
-          "raw": "http://localhost:8080/products/store/{{store_id}}?page=0&size=50&search=&sortBy=onSale&sortDirection=desc",
+          "raw": "http://localhost:8080/products/store/{{store_id}}?page=0&size=50&sortBy=onSale&sortDirection=desc",
           "protocol": "http",
           "host": ["localhost"],
           "port": "8080",
@@ -321,6 +321,7 @@
             {
               "key": "search",
               "value": "",
+              "disabled": true,
               "description": "Search term for title, barcode, brand, category"
             },
             {

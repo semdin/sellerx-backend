@@ -137,7 +137,7 @@ public class TrendyolApiProductResponse {
         @JsonProperty("lockedByUnSuppliedReason")
         private Boolean lockedByUnSuppliedReason;
         
-        @JsonProperty("onsale")
+        @JsonProperty("onSale")
         private Boolean onsale;
         
         @JsonProperty("blacklisted")

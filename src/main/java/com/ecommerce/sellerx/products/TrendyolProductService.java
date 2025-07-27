@@ -287,16 +287,22 @@ public class TrendyolProductService {
         }
     }
     
-    public List<TrendyolProductDto> getProductsByStore(UUID storeId) {
+    public AllProductsResponse getAllProductsByStore(UUID storeId) {
         if (!storeRepository.existsById(storeId)) {
             throw new StoreNotFoundException("Store not found");
         }
         
         List<TrendyolProduct> products = trendyolProductRepository.findByStoreId(storeId);
-        return productMapper.toDtoList(products);
+        List<TrendyolProductDto> productDtos = productMapper.toDtoList(products);
+        
+        return new AllProductsResponse(
+            productDtos,
+            productDtos.size(),
+            "Store products retrieved successfully"
+        );
     }
     
-    public Page<TrendyolProductDto> getProductsByStoreWithPagination(UUID storeId, 
+    public ProductListResponse<TrendyolProductDto> getProductsByStoreWithPagination(UUID storeId, 
                                                                     Integer page, 
                                                                     Integer size, 
                                                                     String search, 
@@ -326,7 +332,21 @@ public class TrendyolProductService {
         }
         
         // Convert to DTOs while preserving pagination info
-        return productsPage.map(productMapper::toDto);
+        List<TrendyolProductDto> productDtos = productsPage.getContent().stream()
+                .map(productMapper::toDto)
+                .toList();
+        
+        return new ProductListResponse<>(
+            productDtos,
+            productsPage.getTotalElements(),
+            productsPage.getTotalPages(),
+            productsPage.getNumber(),
+            productsPage.getSize(),
+            productsPage.isFirst(),
+            productsPage.isLast(),
+            productsPage.hasNext(),
+            productsPage.hasPrevious()
+        );
     }
     
     public TrendyolProductDto updateCostAndStock(UUID productId, UpdateCostAndStockRequest request) {
