@@ -17,10 +17,21 @@ git push origin main
 3. **`sellerx-backend`** repository'nizi seçin
 4. **"Deploy"** tıklayın
 
-## 🗄️ Adım 3: PostgreSQL Database Ekleme
+## 🗄️ Adım 3: PostgreSQL Database Ekleme & Bağlama
 
 1. Railway dashboard'da **`Ctrl/Cmd + K`** tuşlarına basın
 2. **"Database"** → **"Add PostgreSQL"** seçin
+
+### Database'i Backend'e Bağlayın:
+
+3. **Backend service** → **Variables** tab
+4. **New Variable** ekleyin:
+   ```env
+   Name: DATABASE_URL
+   Value: jdbc:${{ Postgres.DATABASE_URL }}
+   ```
+   ⚠️ **Önemli**: `jdbc:` prefix'i ekleyin!
+5. **Deploy** (otomatik trigger olur)
 
 ## ⚙️ Adım 4: Environment Variables (KRİTİK!)
 
@@ -39,9 +50,13 @@ cd sellerx-backend
 ```env
 SPRING_PROFILES_ACTIVE=production
 JWT_SECRET=<generate-jwt-secret.ps1'den çıkan secret>
+DATABASE_URL=jdbc:${{ Postgres.DATABASE_URL }}
 ```
 
-⚠️ **DİKKAT**: JWT_SECRET'ı mutlaka yeni generate edin, local'dekini kullanmayın!
+⚠️ **DİKKAT**:
+
+- JWT_SECRET'ı mutlaka yeni generate edin, local'dekini kullanmayın!
+- DATABASE_URL'de `jdbc:` prefix'i mutlaka olmalı!
 
 ## 🌐 Adım 5: Public URL Oluşturma
 
@@ -80,11 +95,14 @@ railway logs
 - [ ] GitHub'a push yaptım
 - [ ] Railway'de proje oluşturdum
 - [ ] PostgreSQL ekledim
+- [ ] PostgreSQL'i backend'e bağladım (`DATABASE_URL` variable)
 - [ ] JWT secret generate ettim
 - [ ] Environment variables ayarladım:
   - [ ] `SPRING_PROFILES_ACTIVE=production`
   - [ ] `JWT_SECRET=<yeni-secret>`
+  - [ ] `DATABASE_URL=jdbc:${{ Postgres.DATABASE_URL }}`
 - [ ] Public domain oluşturdum
 - [ ] `/health` endpoint test ettim
+- [ ] Flyway migration loglarını kontrol ettim
 
 Bu adımları takip ettikten sonra SellerX backend'iniz Railway'de çalışmaya hazır! 🎉

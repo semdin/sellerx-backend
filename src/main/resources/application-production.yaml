@@ -9,13 +9,25 @@ spring:
     hibernate:
       ddl-auto: none
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
   flyway:
     enabled: true
     locations: classpath:db/migration
+    baseline-on-migrate: true
   jwt:
     secret: ${JWT_SECRET}
     accessTokenExpiration: 3600 # 1h
     refreshTokenExpiration: 604800 # 7d
+
+# Production cookie settings
+app:
+  cookie:
+    secure: true
+    httpOnly: true
 
 server:
   port: ${PORT:8080}
