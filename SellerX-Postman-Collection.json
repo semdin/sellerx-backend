@@ -6,555 +6,575 @@
   },
   "item": [
     {
-      "name": "Register",
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"Mehmet\",\n  \"email\": \"mehmet@example.com\",\n  \"password\": \"123456\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost:8080/users",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["users"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Login",
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"mehmet@example.com\",\n  \"password\": \"123456\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost:8080/auth/login",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["auth", "login"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Get All Users",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/users",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["users"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Me",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/auth/me",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["auth", "me"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Refresh Token",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "url": {
-          "raw": "http://localhost:8080/auth/refresh",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["auth", "refresh"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Register Store",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"storeName\": \"Test Store\",\n  \"marketplace\": \"trendyol\",\n  \"credentials\": {\n    \"type\": \"trendyol\",\n    \"apiKey\": \"api-key\",\n    \"apiSecret\": \"api-secret\",\n    \"sellerId\": 123456,\n    \"Token\": \"jwt-token\"\n  }\n}"
-        },
-        "url": {
-          "raw": "http://localhost:8080/stores",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["stores"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Get All Stores",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/stores",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["stores"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Get My Stores",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/stores/my",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["stores", "my"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Get Store By Id",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/stores/{{store_id}}",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["stores", "{{store_id}}"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Delete Store",
-      "request": {
-        "method": "DELETE",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/stores/{{store_id}}",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["stores", "{{store_id}}"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Update Store",
-      "request": {
-        "method": "PUT",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"storeName\": \"Güncellenmiş Store\",\n  \"marketplace\": \"trendyol\",\n  \"credentials\": {\n    \"type\": \"trendyol\",\n    \"apiKey\": \"yeni-api-key\",\n    \"apiSecret\": \"yeni-api-secret\",\n    \"sellerId\": 654321,\n    \"Token\": \"yeni-jwt-token\"\n  }\n}"
-        },
-        "url": {
-          "raw": "http://localhost:8080/stores/{{store_id}}",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["stores", "{{store_id}}"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Get Selected Store",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/users/selected-store",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["users", "selected-store"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Set Selected Store",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"storeId\": \"{{store_id}}\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost:8080/users/selected-store",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["users", "selected-store"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Get Dashboard Stats",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/dashboard/stats",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["dashboard", "stats"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Test Trendyol Connection",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/trendyol/test-connection",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["trendyol", "test-connection"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Sync Products from Trendyol",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/products/sync/{{store_id}}",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["products", "sync", "{{store_id}}"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Get Products by Store (Paginated)",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/products/store/{{store_id}}?page=0&size=50&sortBy=onSale&sortDirection=desc",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["products", "store", "{{store_id}}"],
-          "query": [
-            {
-              "key": "page",
-              "value": "0",
-              "description": "Page number (0-based)"
+      "name": "🔐 Authentication",
+      "description": "User authentication endpoints including login, registration, token refresh and user profile management",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mehmet\",\n  \"email\": \"mehmet@example.com\",\n  \"password\": \"123456\"\n}"
             },
-            {
-              "key": "size",
-              "value": "50",
-              "description": "Page size (default: 50)"
-            },
-            {
-              "key": "search",
-              "value": "",
-              "disabled": true,
-              "description": "Search term for title, barcode, brand, category"
-            },
-            {
-              "key": "sortBy",
-              "value": "onSale",
-              "description": "Sort field (onSale, updatedAt, title, price, etc.)"
-            },
-            {
-              "key": "sortDirection",
-              "value": "desc",
-              "description": "Sort direction (asc, desc)"
+            "url": {
+              "raw": "http://localhost:8080/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["users"]
             }
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Get All Products by Store (Non-Paginated)",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/products/store/{{store_id}}/all",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["products", "store", "{{store_id}}", "all"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Update Product Cost and Stock (Legacy)",
-      "request": {
-        "method": "PUT",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"quantity\": 100,\n  \"unitCost\": 25.50,\n  \"costVatRate\": 18,\n  \"stockDate\": \"2024-01-15\"\n}"
+          },
+          "response": []
         },
-        "url": {
-          "raw": "http://localhost:8080/products/{{product_id}}/cost-and-stock",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["products", "{{product_id}}", "cost-and-stock"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Add Stock Info",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"quantity\": 50,\n  \"unitCost\": 22.75,\n  \"costVatRate\": 18,\n  \"stockDate\": \"2024-01-20\"\n}"
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mehmet@example.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "http://localhost:8080/products/{{product_id}}/stock-info",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["products", "{{product_id}}", "stock-info"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Update Stock Info by Date",
-      "request": {
-        "method": "PUT",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"quantity\": 75,\n  \"unitCost\": 24.00,\n  \"costVatRate\": 20\n}"
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/auth/me",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["auth", "me"]
+            }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "http://localhost:8080/products/{{product_id}}/stock-info/2024-01-20",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["products", "{{product_id}}", "stock-info", "2024-01-20"]
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/auth/refresh",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["auth", "refresh"]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
     },
     {
-      "name": "Delete Stock Info by Date",
-      "request": {
-        "method": "DELETE",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/products/{{product_id}}/stock-info/2024-01-20",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["products", "{{product_id}}", "stock-info", "2024-01-20"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Get Expense Categories",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/expenses/categories",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["expenses", "categories"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Get Store Expenses",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/expenses/store/{{store_id}}",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["expenses", "store", "{{store_id}}"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Create Store Expense (General)",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"expenseCategoryId\": \"{{expense_category_id}}\",\n  \"productId\": null,\n  \"date\": \"2024-01-15T10:00:00\",\n  \"frequency\": \"MONTHLY\",\n  \"name\": \"Ofis Kirası\",\n  \"amount\": 2500.00\n}"
+      "name": "👥 User Management",
+      "description": "User profile management, selected store preferences and user-related operations",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["users"]
+            }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "http://localhost:8080/expenses/store/{{store_id}}",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["expenses", "store", "{{store_id}}"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Create Store Expense (Product Specific)",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"expenseCategoryId\": \"{{expense_category_id}}\",\n  \"productId\": \"{{product_id}}\",\n  \"date\": \"2024-01-15T10:00:00\",\n  \"frequency\": \"ONE_TIME\",\n  \"name\": \"Ürüne özel reklam kampanyası\",\n  \"amount\": 150.00\n}"
+        {
+          "name": "Get Selected Store",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/users/selected-store",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["users", "selected-store"]
+            }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "http://localhost:8080/expenses/store/{{store_id}}",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["expenses", "store", "{{store_id}}"]
+        {
+          "name": "Set Selected Store",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeId\": \"{{store_id}}\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/users/selected-store",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["users", "selected-store"]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
     },
     {
-      "name": "Update Store Expense",
-      "request": {
-        "method": "PUT",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"expenseCategoryId\": \"{{expense_category_id}}\",\n  \"productId\": null,\n  \"date\": \"2024-01-20T10:00:00\",\n  \"frequency\": \"MONTHLY\",\n  \"name\": \"Güncellenmiş Ofis Kirası\",\n  \"amount\": 2800.00\n}"
+      "name": "🏪 Store Management",
+      "description": "E-commerce store registration, configuration, and management operations for marketplace integrations",
+      "item": [
+        {
+          "name": "Register Store",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeName\": \"Test Store\",\n  \"marketplace\": \"trendyol\",\n  \"credentials\": {\n    \"type\": \"trendyol\",\n    \"apiKey\": \"api-key\",\n    \"apiSecret\": \"api-secret\",\n    \"sellerId\": 123456,\n    \"Token\": \"jwt-token\"\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/stores",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["stores"]
+            }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "http://localhost:8080/expenses/store/{{store_id}}/{{expense_id}}",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["expenses", "store", "{{store_id}}", "{{expense_id}}"]
+        {
+          "name": "Get All Stores",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/stores",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["stores"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Stores",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/stores/my",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["stores", "my"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Store By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/stores/{{store_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["stores", "{{store_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Store",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeName\": \"Güncellenmiş Store\",\n  \"marketplace\": \"trendyol\",\n  \"credentials\": {\n    \"type\": \"trendyol\",\n    \"apiKey\": \"yeni-api-key\",\n    \"apiSecret\": \"yeni-api-secret\",\n    \"sellerId\": 654321,\n    \"Token\": \"yeni-jwt-token\"\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/stores/{{store_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["stores", "{{store_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Store",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/stores/{{store_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["stores", "{{store_id}}"]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
     },
     {
-      "name": "Delete Store Expense",
-      "request": {
-        "method": "DELETE",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}" }
-        ],
-        "url": {
-          "raw": "http://localhost:8080/expenses/store/{{store_id}}/{{expense_id}}",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8080",
-          "path": ["expenses", "store", "{{store_id}}", "{{expense_id}}"]
+      "name": "📊 Dashboard & Analytics",
+      "description": "Business intelligence endpoints providing sales statistics, performance metrics and analytical data",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/dashboard/stats",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["dashboard", "stats"]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
+    },
+    {
+      "name": "🛒 Trendyol Integration",
+      "description": "Trendyol marketplace API integration endpoints for connection testing and data synchronization",
+      "item": [
+        {
+          "name": "Test Trendyol Connection",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/trendyol/test-connection",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["trendyol", "test-connection"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📦 Product Management",
+      "description": "Product catalog management including synchronization from marketplaces, inventory tracking and stock operations",
+      "item": [
+        {
+          "name": "Sync Products from Trendyol",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/products/sync/{{store_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["products", "sync", "{{store_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Products by Store (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/products/store/{{store_id}}?page=0&size=50&sortBy=onSale&sortDirection=desc",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["products", "store", "{{store_id}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "50",
+                  "description": "Page size (default: 50)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Search term for title, barcode, brand, category"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "onSale",
+                  "description": "Sort field (onSale, updatedAt, title, price, etc.)"
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "desc",
+                  "description": "Sort direction (asc, desc)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Products by Store (Non-Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/products/store/{{store_id}}/all",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["products", "store", "{{store_id}}", "all"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Stock Info",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 50,\n  \"unitCost\": 22.75,\n  \"costVatRate\": 18,\n  \"stockDate\": \"2024-01-20\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/products/{{product_id}}/stock-info",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["products", "{{product_id}}", "stock-info"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Stock Info by Date",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 75,\n  \"unitCost\": 24.00,\n  \"costVatRate\": 20\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/products/{{product_id}}/stock-info/2024-01-20",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["products", "{{product_id}}", "stock-info", "2024-01-20"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Stock Info by Date",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/products/{{product_id}}/stock-info/2024-01-20",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["products", "{{product_id}}", "stock-info", "2024-01-20"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "💰 Expense Management",
+      "description": "Business expense tracking and categorization system with support for general and product-specific costs",
+      "item": [
+        {
+          "name": "Get Expense Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/expenses/categories",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["expenses", "categories"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Store Expenses",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/expenses/store/{{store_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["expenses", "store", "{{store_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Store Expense (General)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expenseCategoryId\": \"{{expense_category_id}}\",\n  \"productId\": null,\n  \"date\": \"2024-01-15T10:00:00\",\n  \"frequency\": \"MONTHLY\",\n  \"name\": \"Ofis Kirası\",\n  \"amount\": 2500.00\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/expenses/store/{{store_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["expenses", "store", "{{store_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Store Expense (Product Specific)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expenseCategoryId\": \"{{expense_category_id}}\",\n  \"productId\": \"{{product_id}}\",\n  \"date\": \"2024-01-15T10:00:00\",\n  \"frequency\": \"ONE_TIME\",\n  \"name\": \"Ürüne özel reklam kampanyası\",\n  \"amount\": 150.00\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/expenses/store/{{store_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["expenses", "store", "{{store_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Store Expense",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expenseCategoryId\": \"{{expense_category_id}}\",\n  \"productId\": null,\n  \"date\": \"2024-01-20T10:00:00\",\n  \"frequency\": \"MONTHLY\",\n  \"name\": \"Güncellenmiş Ofis Kirası\",\n  \"amount\": 2800.00\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/expenses/store/{{store_id}}/{{expense_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["expenses", "store", "{{store_id}}", "{{expense_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Store Expense",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/expenses/store/{{store_id}}/{{expense_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["expenses", "store", "{{store_id}}", "{{expense_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "event": [
