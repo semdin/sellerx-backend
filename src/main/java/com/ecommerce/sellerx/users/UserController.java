@@ -1,6 +1,7 @@
 package com.ecommerce.sellerx.users;
 
 import com.ecommerce.sellerx.auth.JwtService;
+import com.ecommerce.sellerx.config.CookieConfig;
 import com.ecommerce.sellerx.stores.StoreService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class UserController {
     private final UserService userService;
     private final JwtService jwtService;
+    private final CookieConfig cookieConfig;
     private final StoreService storeService;
 
     @GetMapping
@@ -74,18 +76,18 @@ public class UserController {
             // DB'deki değeri cookie'ye de yaz (sync için)
             if (selectedStoreId != null) {
                 var storeIdCookie = new Cookie("selected_store_id", selectedStoreId.toString());
-                storeIdCookie.setHttpOnly(false);
+                storeIdCookie.setHttpOnly(false); // Frontend'den okunabilir olmalı
                 storeIdCookie.setPath("/");
                 storeIdCookie.setMaxAge(30 * 24 * 60 * 60); // 30 days
-                storeIdCookie.setSecure(false);
+                storeIdCookie.setSecure(cookieConfig.isSecure());
                 response.addCookie(storeIdCookie);
             } else {
                 // DB'de store yoksa cookie'yi de sil
                 var storeIdCookie = new Cookie("selected_store_id", "");
-                storeIdCookie.setHttpOnly(false);
+                storeIdCookie.setHttpOnly(false); // Frontend'den okunabilir olmalı
                 storeIdCookie.setPath("/");
                 storeIdCookie.setMaxAge(0);
-                storeIdCookie.setSecure(false);
+                storeIdCookie.setSecure(cookieConfig.isSecure());
                 response.addCookie(storeIdCookie);
             }
             
@@ -124,10 +126,10 @@ public class UserController {
             
             // Cookie set et (AuthController.login() gibi)
             var storeIdCookie = new Cookie("selected_store_id", storeId.toString());
-            storeIdCookie.setHttpOnly(false); // Client-side erişim için
+            storeIdCookie.setHttpOnly(false); // Client-side erişim için (frontend'den okunabilir olmalı)
             storeIdCookie.setPath("/");
             storeIdCookie.setMaxAge(30 * 24 * 60 * 60); // 30 days
-            storeIdCookie.setSecure(false);
+            storeIdCookie.setSecure(cookieConfig.isSecure());
             httpResponse.addCookie(storeIdCookie);
             
             return ResponseEntity.ok(Map.of("success", true));

@@ -1,5 +1,6 @@
 package com.ecommerce.sellerx.auth;
 
+import com.ecommerce.sellerx.config.CookieConfig;
 import com.ecommerce.sellerx.users.UserDto;
 import com.ecommerce.sellerx.users.UserMapper;
 import jakarta.servlet.http.Cookie;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 public class AuthController {
     private final JwtConfig jwtConfig;
+    private final CookieConfig cookieConfig;
     private final UserMapper userMapper;
     private final AuthService authService;
 
@@ -28,18 +30,18 @@ public class AuthController {
 
         var refreshToken = loginResult.getRefreshToken().toString();
         var refresCookie = new Cookie("refreshToken", refreshToken);
-        refresCookie.setHttpOnly(true);
+        refresCookie.setHttpOnly(cookieConfig.isHttpOnly());
         refresCookie.setPath("/");
         refresCookie.setMaxAge(jwtConfig.getRefreshTokenExpiration());
-        refresCookie.setSecure(false);
+        refresCookie.setSecure(cookieConfig.isSecure());
         response.addCookie(refresCookie);
 
         var accessToken = loginResult.getAccessToken().toString();
         var accessCookie = new Cookie("access_token", accessToken);
-        accessCookie.setHttpOnly(true);
+        accessCookie.setHttpOnly(cookieConfig.isHttpOnly());
         accessCookie.setPath("/");
         accessCookie.setMaxAge(jwtConfig.getAccessTokenExpiration());
-        accessCookie.setSecure(false);
+        accessCookie.setSecure(cookieConfig.isSecure());
         response.addCookie(accessCookie);
 
         return new JwtResponse(loginResult.getAccessToken().toString());
@@ -49,24 +51,24 @@ public class AuthController {
     public ResponseEntity<Void> logout(HttpServletResponse response) {
         // access_token cookie'sini sil
         Cookie accessTokenCookie = new Cookie("access_token", "");
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(false); // Prod'da true olmalı
+        accessTokenCookie.setHttpOnly(cookieConfig.isHttpOnly());
+        accessTokenCookie.setSecure(cookieConfig.isSecure());
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(0); // Silinsin
         response.addCookie(accessTokenCookie);
 
         // refreshToken cookie'sini sil - path "/" olmalı (login sırasındaki ile aynı)
         Cookie refreshTokenCookie = new Cookie("refreshToken", "");
-        refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(false); // Prod'da true olmalı
+        refreshTokenCookie.setHttpOnly(cookieConfig.isHttpOnly());
+        refreshTokenCookie.setSecure(cookieConfig.isSecure());
         refreshTokenCookie.setPath("/"); // Login sırasında "/" kullanıldı, logout'ta da aynı olmalı
         refreshTokenCookie.setMaxAge(0); // Silinsin
         response.addCookie(refreshTokenCookie);
 
         // selected_store_id cookie'sini de sil
         Cookie selectedStoreCookie = new Cookie("selected_store_id", "");
-        selectedStoreCookie.setHttpOnly(false);
-        selectedStoreCookie.setSecure(false);
+        selectedStoreCookie.setHttpOnly(false); // Bu cookie frontend'den okunabilir olmalı
+        selectedStoreCookie.setSecure(cookieConfig.isSecure());
         selectedStoreCookie.setPath("/");
         selectedStoreCookie.setMaxAge(0); // Silinsin
         response.addCookie(selectedStoreCookie);
@@ -79,10 +81,10 @@ public class AuthController {
     public JwtResponse refresh(@CookieValue(value = "refreshToken") String refreshToken, HttpServletResponse response) {
         var accessToken = authService.refreshAccessToken(refreshToken);
         var accessCookie = new Cookie("access_token", accessToken.toString());
-        accessCookie.setHttpOnly(true);
+        accessCookie.setHttpOnly(cookieConfig.isHttpOnly());
         accessCookie.setPath("/");
         accessCookie.setMaxAge(jwtConfig.getAccessTokenExpiration());
-        accessCookie.setSecure(false); // Prod'da true olmalı
+        accessCookie.setSecure(cookieConfig.isSecure());
         response.addCookie(accessCookie);
         return new JwtResponse(accessToken.toString());
     }
