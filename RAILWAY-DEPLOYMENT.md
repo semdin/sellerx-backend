@@ -24,14 +24,15 @@ git push origin main
 
 ### Database'i Backend'e Bağlayın:
 
-3. **Backend service** → **Variables** tab
-4. **New Variable** ekleyin:
-   ```env
-   Name: DATABASE_URL
-   Value: jdbc:${{ Postgres.DATABASE_URL }}
-   ```
-   ⚠️ **Önemli**: `jdbc:` prefix'i ekleyin!
-5. **Deploy** (otomatik trigger olur)
+3. **Railway otomatik bağlantı kontrolü:**
+   - PostgreSQL eklendikten sonra **Variables** tab'ında `DATABASE_URL` var mı kontrol edin
+   - Yoksa **New Variable** ekleyin:
+     ```env
+     Name: DATABASE_URL  
+     Value: ${{ Postgres.DATABASE_URL }}
+     ```
+
+4. **Deploy** (otomatik trigger olur)
 
 ## ⚙️ Adım 4: Environment Variables (KRİTİK!)
 
@@ -50,13 +51,13 @@ cd sellerx-backend
 ```env
 SPRING_PROFILES_ACTIVE=production
 JWT_SECRET=<generate-jwt-secret.ps1'den çıkan secret>
-DATABASE_URL=jdbc:${{ Postgres.DATABASE_URL }}
+DATABASE_URL=${{ Postgres.DATABASE_URL }}
 ```
 
 ⚠️ **DİKKAT**:
 
 - JWT_SECRET'ı mutlaka yeni generate edin, local'dekini kullanmayın!
-- DATABASE_URL'de `jdbc:` prefix'i mutlaka olmalı!
+- DATABASE_URL Railway tarafından otomatik oluşturulmalı
 
 ## 🌐 Adım 5: Public URL Oluşturma
 
@@ -100,7 +101,7 @@ railway logs
 - [ ] Environment variables ayarladım:
   - [ ] `SPRING_PROFILES_ACTIVE=production`
   - [ ] `JWT_SECRET=<yeni-secret>`
-  - [ ] `DATABASE_URL=jdbc:${{ Postgres.DATABASE_URL }}`
+  - [ ] `DATABASE_URL=${{ Postgres.DATABASE_URL }}`
 - [ ] Public domain oluşturdum
 - [ ] `/health` endpoint test ettim
 - [ ] Flyway migration loglarını kontrol ettim
