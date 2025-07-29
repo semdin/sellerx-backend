@@ -2,8 +2,10 @@ spring:
   application:
     name: sellerx
   datasource:
-    # Railway DATABASE_URL will be parsed by Spring Boot automatically
-    url: ${DATABASE_URL}
+    # Alternative: Use separate environment variables if DATABASE_URL doesn't work
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sellerx}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 5
