@@ -1,6 +1,8 @@
 package com.ecommerce.sellerx.stores;
 
 import com.ecommerce.sellerx.users.UserService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -66,10 +68,35 @@ public class StoreController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteStore(@PathVariable UUID id) {
+    public ResponseEntity<Void> deleteStore(@PathVariable UUID id, HttpServletResponse response) {
         Long userId = (Long) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userRepository.findById(userId).orElseThrow(com.ecommerce.sellerx.users.UserNotFoundException::new);
+        
+        // Store'u sil (StoreService içinde selected store logic'i var)
         storeService.deleteStoreByUser(id, user);
+        
+        // Delete sonrası yeni selected store'u al
+        UUID newSelectedStoreId = userService.getSelectedStoreId(userId);
+        
+        // Cookie'yi güncelle
+        if (newSelectedStoreId != null) {
+            // Yeni store seçildiyse cookie'yi güncelle
+            var storeIdCookie = new Cookie("selected_store_id", newSelectedStoreId.toString());
+            storeIdCookie.setHttpOnly(false);
+            storeIdCookie.setPath("/");
+            storeIdCookie.setMaxAge(30 * 24 * 60 * 60); // 30 days
+            storeIdCookie.setSecure(false);
+            response.addCookie(storeIdCookie);
+        } else {
+            // Hiç store kalmadıysa cookie'yi sil
+            var storeIdCookie = new Cookie("selected_store_id", "");
+            storeIdCookie.setHttpOnly(false);
+            storeIdCookie.setPath("/");
+            storeIdCookie.setMaxAge(0); // Delete cookie
+            storeIdCookie.setSecure(false);
+            response.addCookie(storeIdCookie);
+        }
+        
         return ResponseEntity.noContent().build();
     }
 }

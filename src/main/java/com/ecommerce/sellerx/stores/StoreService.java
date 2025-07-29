@@ -70,9 +70,26 @@ public class StoreService {
             throw new RuntimeException("Store does not belong to user");
         }
         
-        // Eğer silinecek store kullanıcının seçili store'u ise, seçili store'u null yap
-        if (user.getSelectedStoreId() != null && user.getSelectedStoreId().equals(storeId)) {
-            userService.setSelectedStoreId(user.getId(), null);
+        // Store siliniyor - selected store logic'i
+        UUID currentSelectedStoreId = user.getSelectedStoreId();
+        boolean isSelectedStore = currentSelectedStoreId != null && currentSelectedStoreId.equals(storeId);
+        
+        if (isSelectedStore) {
+            // Silinecek store = selected store
+            // Diğer store'ları bul
+            List<Store> remainingStores = storeRepository.findAllByUser(user)
+                    .stream()
+                    .filter(s -> !s.getId().equals(storeId))
+                    .toList();
+            
+            if (!remainingStores.isEmpty()) {
+                // Başka store varsa ilkini seç
+                UUID newSelectedStoreId = remainingStores.get(0).getId();
+                userService.setSelectedStoreId(user.getId(), newSelectedStoreId);
+            } else {
+                // Son store siliniyorsa selected_store_id = null
+                userService.setSelectedStoreId(user.getId(), null);
+            }
         }
         
         storeRepository.deleteByIdAndUser(storeId, user);
