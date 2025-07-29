@@ -25,10 +25,11 @@ git push origin main
 ### Database'i Backend'e Bağlayın:
 
 3. **Railway otomatik bağlantı kontrolü:**
+
    - PostgreSQL eklendikten sonra **Variables** tab'ında `DATABASE_URL` var mı kontrol edin
    - Yoksa **New Variable** ekleyin:
      ```env
-     Name: DATABASE_URL  
+     Name: DATABASE_URL
      Value: ${{ Postgres.DATABASE_URL }}
      ```
 
