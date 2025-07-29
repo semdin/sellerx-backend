@@ -63,6 +63,14 @@ public class AuthController {
         refreshTokenCookie.setMaxAge(0); // Silinsin
         response.addCookie(refreshTokenCookie);
 
+        // selected_store_id cookie'sini de sil
+        Cookie selectedStoreCookie = new Cookie("selected_store_id", "");
+        selectedStoreCookie.setHttpOnly(false);
+        selectedStoreCookie.setSecure(false);
+        selectedStoreCookie.setPath("/");
+        selectedStoreCookie.setMaxAge(0); // Silinsin
+        response.addCookie(selectedStoreCookie);
+
         return ResponseEntity.ok().build();
     }
 

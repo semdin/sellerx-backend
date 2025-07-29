@@ -2,7 +2,9 @@ package com.ecommerce.sellerx.users;
 
 import com.ecommerce.sellerx.auth.JwtService;
 import com.ecommerce.sellerx.stores.StoreService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -64,10 +66,29 @@ public class UserController {
     }
 
     @GetMapping("/selected-store")
-    public ResponseEntity<?> getSelectedStore(HttpServletRequest request) {
+    public ResponseEntity<?> getSelectedStore(HttpServletRequest request, HttpServletResponse response) {
         try {
             Long userId = jwtService.getUserIdFromToken(request);
             UUID selectedStoreId = userService.getSelectedStoreId(userId);
+            
+            // DB'deki değeri cookie'ye de yaz (sync için)
+            if (selectedStoreId != null) {
+                var storeIdCookie = new Cookie("selected_store_id", selectedStoreId.toString());
+                storeIdCookie.setHttpOnly(false);
+                storeIdCookie.setPath("/");
+                storeIdCookie.setMaxAge(30 * 24 * 60 * 60); // 30 days
+                storeIdCookie.setSecure(false);
+                response.addCookie(storeIdCookie);
+            } else {
+                // DB'de store yoksa cookie'yi de sil
+                var storeIdCookie = new Cookie("selected_store_id", "");
+                storeIdCookie.setHttpOnly(false);
+                storeIdCookie.setPath("/");
+                storeIdCookie.setMaxAge(0);
+                storeIdCookie.setSecure(false);
+                response.addCookie(storeIdCookie);
+            }
+            
             return ResponseEntity.ok(Map.of("selectedStoreId", selectedStoreId != null ? selectedStoreId.toString() : ""));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -76,7 +97,7 @@ public class UserController {
     }
 
     @PostMapping("/selected-store")
-    public ResponseEntity<?> setSelectedStore(@RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
+    public ResponseEntity<?> setSelectedStore(@RequestBody Map<String, String> request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         try {
             Long userId = jwtService.getUserIdFromToken(httpRequest);
             String storeIdString = request.get("storeId");
@@ -100,6 +121,14 @@ public class UserController {
             
             // User'ın selected store'unu güncelle
             userService.setSelectedStoreId(userId, storeId);
+            
+            // Cookie set et (AuthController.login() gibi)
+            var storeIdCookie = new Cookie("selected_store_id", storeId.toString());
+            storeIdCookie.setHttpOnly(false); // Client-side erişim için
+            storeIdCookie.setPath("/");
+            storeIdCookie.setMaxAge(30 * 24 * 60 * 60); // 30 days
+            storeIdCookie.setSecure(false);
+            httpResponse.addCookie(storeIdCookie);
             
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
