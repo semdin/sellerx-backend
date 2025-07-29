@@ -27,6 +27,7 @@ git push origin main
 Backend servisinizde **mutlaka** şu 2 variable'ı ayarlayın:
 
 ### JWT Secret Oluşturun:
+
 ```powershell
 # PowerShell'de çalıştırın:
 cd sellerx-backend
@@ -34,6 +35,7 @@ cd sellerx-backend
 ```
 
 ### Railway Variables:
+
 ```env
 SPRING_PROFILES_ACTIVE=production
 JWT_SECRET=<generate-jwt-secret.ps1'den çıkan secret>
@@ -57,16 +59,19 @@ JWT_SECRET=<generate-jwt-secret.ps1'den çıkan secret>
 ## 🔧 Sorun Giderme
 
 ### Deployment Başarısız:
+
 ```bash
 # Railway CLI ile logs kontrol edin
 railway logs
 ```
 
 ### Environment Variables Eksik:
+
 - `SPRING_PROFILES_ACTIVE=production` var mı?
 - `JWT_SECRET` set edilmiş mi?
 
 ### Database Bağlantı Sorunu:
+
 - PostgreSQL service çalışıyor mu?
 - `DATABASE_URL` otomatik oluştu mu?
 
