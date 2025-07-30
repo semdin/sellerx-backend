@@ -575,6 +575,171 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "📦 Order Management",
+      "description": "Trendyol order synchronization and management endpoints for tracking sales and order analytics",
+      "item": [
+        {
+          "name": "Sync Orders for Store",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/orders/stores/{{store_id}}/sync",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "orders", "stores", "{{store_id}}", "sync"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sync Orders for All Stores",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/orders/sync-all",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "orders", "sync-all"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Orders for Store (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/orders/stores/{{store_id}}?page=0&size=20",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "orders", "stores", "{{store_id}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Page size (default: 20)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Orders by Date Range",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/orders/stores/{{store_id}}/by-date-range?startDate=2025-07-01T00:00:00&endDate=2025-07-30T23:59:59&page=0&size=20",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": [
+                "api",
+                "orders",
+                "stores",
+                "{{store_id}}",
+                "by-date-range"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-07-01T00:00:00",
+                  "description": "Start date in ISO format (YYYY-MM-DDTHH:mm:ss)"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-07-30T23:59:59",
+                  "description": "End date in ISO format (YYYY-MM-DDTHH:mm:ss)"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Page size (default: 20)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Orders by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/orders/stores/{{store_id}}/by-status?status=Delivered&page=0&size=20",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "orders", "stores", "{{store_id}}", "by-status"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Delivered",
+                  "description": "Order status (Delivered, Returned, UnPacked, etc.)"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Page size (default: 20)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/orders/stores/{{store_id}}/statistics",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "orders", "stores", "{{store_id}}", "statistics"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "event": [

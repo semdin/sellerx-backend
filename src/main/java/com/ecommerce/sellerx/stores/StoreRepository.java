@@ -13,6 +13,8 @@ import com.ecommerce.sellerx.users.User;
 public interface StoreRepository extends JpaRepository<Store, UUID> {
     List<Store> findAllByUser(User user);
     
+    List<Store> findByMarketplace(String marketplace);
+    
     @Modifying
     @Transactional
     @Query("DELETE FROM Store s WHERE s.id = :id AND s.user = :user")
