@@ -35,6 +35,11 @@ app:
   cookie:
     secure: true
     httpOnly: true
+  # Webhook configuration - ENABLED for production
+  webhook:
+    enabled: true # ENABLED for production
+    base-url: ${WEBHOOK_BASE_URL}
+    api-key: ${WEBHOOK_API_KEY}
 
 server:
   port: ${PORT:8080}

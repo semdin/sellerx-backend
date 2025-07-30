@@ -33,6 +33,9 @@ public class Store {
     @Type(JsonBinaryType.class)
     @Column(name = "credentials", columnDefinition = "jsonb", nullable = false)
     private MarketplaceCredentials credentials;
+    
+    @Column(name = "webhook_id")
+    private String webhookId; // Trendyol webhook ID for this store
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

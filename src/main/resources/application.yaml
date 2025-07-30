@@ -21,6 +21,13 @@ spring:
     accessTokenExpiration: 3600 # 1h - test
     refreshTokenExpiration: 604800 # 7d
 
+# Webhook configuration
+app:
+  webhook:
+    enabled: false # Default: disabled for development
+    base-url: ${WEBHOOK_BASE_URL:http://localhost:8080}
+    api-key: ${WEBHOOK_API_KEY:sellerx-webhook-key}
+
 logging:
   level:
     com.ecommerce.sellerx.products: INFO

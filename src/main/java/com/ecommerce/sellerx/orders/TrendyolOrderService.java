@@ -2,7 +2,6 @@ package com.ecommerce.sellerx.orders;
 
 import com.ecommerce.sellerx.products.TrendyolProduct;
 import com.ecommerce.sellerx.products.TrendyolProductRepository;
-import com.ecommerce.sellerx.products.CostAndStockInfo;
 import com.ecommerce.sellerx.stores.Store;
 import com.ecommerce.sellerx.stores.StoreRepository;
 import com.ecommerce.sellerx.stores.TrendyolCredentials;
@@ -14,9 +13,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -34,6 +31,7 @@ public class TrendyolOrderService {
     private final TrendyolProductRepository productRepository;
     private final TrendyolOrderMapper orderMapper;
     private final RestTemplate restTemplate;
+    private final OrderCostCalculator costCalculator;
 
     /**
      * Fetch and save orders for a specific store from Trendyol API
@@ -313,71 +311,10 @@ public class TrendyolOrderService {
                 .vatBaseAmount(line.getVatBaseAmount())
                 .price(line.getPrice());
         
-        // Try to get cost information from our trendyol_products table
-        if (line.getBarcode() != null && !line.getBarcode().isEmpty()) {
-            TrendyolProduct product = null;
-            
-            // Use cache if available, otherwise query database
-            if (productCache != null) {
-                product = productCache.get(line.getBarcode());
-            } else {
-                Optional<TrendyolProduct> productOpt = productRepository.findByStoreIdAndBarcode(storeId, line.getBarcode());
-                product = productOpt.orElse(null);
-            }
-            
-            if (product != null) {
-                // Get the appropriate cost information based on order date
-                if (!product.getCostAndStockInfo().isEmpty()) {
-                    // Sort cost and stock info by date (earliest first)
-                    List<CostAndStockInfo> sortedCosts = product.getCostAndStockInfo().stream()
-                            .filter(cost -> cost.getStockDate() != null)
-                            .sorted((c1, c2) -> c1.getStockDate().compareTo(c2.getStockDate()))
-                            .collect(Collectors.toList());
-                    
-                    if (!sortedCosts.isEmpty()) {
-                        // Find the most appropriate cost for the order date
-                        CostAndStockInfo appropriateCost = findAppropriateCost(sortedCosts, orderDate.toLocalDate());
-                        
-                        if (appropriateCost != null) {
-                            itemBuilder.cost(appropriateCost.getUnitCost() != null ? 
-                                            BigDecimal.valueOf(appropriateCost.getUnitCost()) : null)
-                                      .costVat(appropriateCost.getCostVatRate());
-                            
-                            log.debug("Found cost {} for product {} on order date {}", 
-                                    appropriateCost.getUnitCost(), line.getBarcode(), orderDate);
-                        } else {
-                            log.debug("No appropriate cost found for product {} on order date {}", 
-                                    line.getBarcode(), orderDate);
-                        }
-                    }
-                } else {
-                    log.debug("No cost information found for product with barcode: {}", line.getBarcode());
-                }
-            } else {
-                log.debug("Product not found in trendyol_products for barcode: {}", line.getBarcode());
-            }
-        }
+        // Use the cost calculator to set cost information
+        costCalculator.setCostInfo(itemBuilder, line.getBarcode(), storeId, orderDate, productCache);
         
         return itemBuilder.build();
-    }
-    
-    /**
-     * Find the most appropriate cost for the given order date
-     * Logic: Use the latest cost entry that is on or before the order date
-     */
-    private CostAndStockInfo findAppropriateCost(List<CostAndStockInfo> sortedCosts, java.time.LocalDate orderDate) {
-        CostAndStockInfo appropriateCost = null;
-        
-        for (CostAndStockInfo cost : sortedCosts) {
-            // If cost date is after order date, break (since list is sorted)
-            if (cost.getStockDate().isAfter(orderDate)) {
-                break;
-            }
-            // This cost is on or before the order date, so it's a candidate
-            appropriateCost = cost;
-        }
-        
-        return appropriateCost;
     }
     
     private TrendyolCredentials extractTrendyolCredentials(Store store) {

@@ -19,15 +19,15 @@ public class TrendyolOrderScheduledService {
 
     /**
      * Scheduled task to sync orders for all Trendyol stores
-     * Runs every day at 6:00 AM
+     * Runs every day at 6:00 AM Turkey time (GMT+3)
      */
-    @Scheduled(cron = "0 0 6 * * ?")
+    @Scheduled(cron = "0 0 6 * * ?", zone = "Europe/Istanbul")
     public void syncOrdersForAllTrendyolStores() {
-        log.info("Starting scheduled order sync for all Trendyol stores");
+        log.info("Starting scheduled order sync for all Trendyol stores at 6:00 AM Turkey time");
         
         try {
             // Get all Trendyol stores
-            List<Store> trendyolStores = storeRepository.findByMarketplace("trendyol");
+            List<Store> trendyolStores = storeRepository.findByMarketplace("TRENDYOL");
             
             log.info("Found {} Trendyol stores for order sync", trendyolStores.size());
             

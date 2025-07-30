@@ -35,6 +35,28 @@
   - **Batch Saves**: Uses `saveAll()` instead of individual `save()` calls
 - **Result**: ~10x faster processing (from ~20 minutes to ~2-3 minutes for 6000+ orders)
 
+### 5. 🔔 Real-time Webhook Integration
+
+- **Problem**: Orders only synced manually or with scheduled batches
+- **Solution**: Implemented Trendyol webhook system:
+  - **Automatic Webhook Creation**: Creates webhook for each store during registration
+  - **Real-time Order Updates**: Receives instant notifications when order status changes
+  - **Status Synchronization**: Updates existing orders with new statuses (CREATED, INVOICED, SHIPPED, etc.)
+  - **New Order Detection**: Automatically saves new orders as they arrive
+  - **Webhook Management**: Automatic cleanup when stores are deleted
+- **Result**: Instant order updates without waiting for scheduled sync
+
+### 6. ⏰ Scheduled Daily Sync
+
+- **Problem**: Manual order synchronization required
+- **Solution**: Automated daily synchronization:
+  - **Runs at 6:00 AM** Turkey time every day
+  - **Processes all Trendyol stores** automatically
+  - **Rate Limited**: 2-second delays between stores to prevent API throttling
+  - **Error Handling**: Continues processing other stores if one fails
+  - **Progress Logging**: Detailed logs for monitoring and debugging
+- **Result**: Fully automated order management system
+
 ## 🚀 New Features
 
 ### Enhanced API Method
@@ -64,6 +86,28 @@ fetchOrdersForDateRange(credentials, storeId, store, startDate, endDate)
 - Product caching eliminates N+1 queries
 - Batch existence checks reduce database round-trips
 - Progress logging every 10 pages for better monitoring
+
+### Real-time Webhook System
+
+```java
+@PostMapping("/api/webhook/trendyol/{sellerId}")
+public ResponseEntity<String> receiveTrendyolWebhook(...)
+```
+
+- Receives instant order notifications from Trendyol
+- Processes order status changes in real-time
+- Automatic webhook creation/deletion with store management
+
+### Automated Daily Sync
+
+```java
+@Scheduled(cron = "0 0 6 * * ?", zone = "Europe/Istanbul")
+public void scheduledDailySync()
+```
+
+- Runs every morning at 6:00 AM Turkey time
+- Syncs all active Trendyol stores automatically
+- Comprehensive error handling and progress tracking
 
 ## 📈 Performance Improvements
 

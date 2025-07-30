@@ -1,5 +1,6 @@
 package com.ecommerce.sellerx.stores;
 
+import com.ecommerce.sellerx.webhook.TrendyolWebhookManagementService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ public class StoreService {
     private final StoreRepository storeRepository;
     private final StoreMapper storeMapper;
     private final com.ecommerce.sellerx.users.UserService userService;
+    private final TrendyolWebhookManagementService webhookManagementService;
 
     public List<StoreDto> getStoresByUser(com.ecommerce.sellerx.users.User user) {
         return storeRepository.findAllByUser(user)
@@ -40,7 +42,20 @@ public class StoreService {
         store.setUser(user);
         store.setCreatedAt(java.time.LocalDateTime.now());
         store.setUpdatedAt(java.time.LocalDateTime.now());
+        
+        // Save store first
         storeRepository.save(store);
+        
+        // Create webhook for Trendyol stores
+        if ("TRENDYOL".equals(store.getMarketplace()) && store.getCredentials() instanceof TrendyolCredentials) {
+            TrendyolCredentials trendyolCredentials = (TrendyolCredentials) store.getCredentials();
+            String webhookId = webhookManagementService.createWebhookForStore(trendyolCredentials);
+            if (webhookId != null) {
+                store.setWebhookId(webhookId);
+                storeRepository.save(store); // Save again with webhook ID
+            }
+        }
+        
         return storeMapper.toDto(store);
     }
 
@@ -68,6 +83,12 @@ public class StoreService {
         var store = storeRepository.findById(storeId).orElseThrow(() -> new StoreNotFoundException("Store not found"));
         if (!store.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Store does not belong to user");
+        }
+        
+        // Delete webhook if exists
+        if (store.getWebhookId() != null && "TRENDYOL".equals(store.getMarketplace())) {
+            TrendyolCredentials trendyolCredentials = (TrendyolCredentials) store.getCredentials();
+            webhookManagementService.deleteWebhookForStore(trendyolCredentials, store.getWebhookId());
         }
         
         // Store siliniyor - selected store logic'i

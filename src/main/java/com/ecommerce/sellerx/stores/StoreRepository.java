@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
+import java.util.Optional;
 
 import java.util.List;
 import com.ecommerce.sellerx.users.User;
@@ -14,6 +15,10 @@ public interface StoreRepository extends JpaRepository<Store, UUID> {
     List<Store> findAllByUser(User user);
     
     List<Store> findByMarketplace(String marketplace);
+    
+    // Find store by seller ID (from JSONB credentials)
+    @Query(value = "SELECT * FROM stores s WHERE s.credentials->>'sellerId' = :sellerId", nativeQuery = true)
+    Optional<Store> findBySellerId(@Param("sellerId") String sellerId);
     
     @Modifying
     @Transactional
