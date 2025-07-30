@@ -34,6 +34,10 @@ public interface TrendyolOrderRepository extends JpaRepository<TrendyolOrder, UU
     // Check if order exists by store and package number
     boolean existsByStoreIdAndPackageNo(UUID storeId, Long packageNo);
     
+    // Batch check existing package numbers
+    @Query("SELECT o.packageNo FROM TrendyolOrder o WHERE o.store.id = :storeId AND o.packageNo IN :packageNumbers")
+    List<Long> findExistingPackageNumbers(@Param("storeId") UUID storeId, @Param("packageNumbers") List<Long> packageNumbers);
+    
     // Find orders by status
     @Query("SELECT o FROM TrendyolOrder o WHERE o.store.id = :storeId AND o.status = :status ORDER BY o.orderDate DESC")
     Page<TrendyolOrder> findByStoreAndStatus(@Param("storeId") UUID storeId, 

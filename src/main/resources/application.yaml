@@ -23,7 +23,10 @@ spring:
 
 logging:
   level:
-    com.ecommerce.sellerx.products: DEBUG
+    com.ecommerce.sellerx.products: INFO
+    com.ecommerce.sellerx.orders: INFO
+    org.hibernate.SQL: INFO
+    root: INFO
 #server:
 #  port: 8443
 #  ssl:

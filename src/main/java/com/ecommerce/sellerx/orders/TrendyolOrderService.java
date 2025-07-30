@@ -16,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -105,44 +106,72 @@ public class TrendyolOrderService {
         int page = 0;
         boolean hasMorePages = true;
         
+        // Pre-load all products for this store to avoid N+1 queries
+        Map<String, TrendyolProduct> productCache = productRepository.findByStoreId(storeId)
+                .stream()
+                .filter(p -> p.getBarcode() != null && !p.getBarcode().isEmpty())
+                .collect(Collectors.toMap(TrendyolProduct::getBarcode, p -> p));
+        
+        log.info("Loaded {} products into cache for store {}", productCache.size(), storeId);
+        
         while (hasMorePages) {
             try {
                 TrendyolOrderApiResponse apiResponse = fetchOrdersFromTrendyol(credentials, page, 200, startDate, endDate);
                 
                 if (apiResponse == null || apiResponse.getContent() == null || apiResponse.getContent().isEmpty()) {
-                    log.debug("No more orders found for page {} in date range", page);
                     break;
                 }
                 
-                log.debug("Processing page {} with {} orders", page, apiResponse.getContent().size());
+                if (page % 10 == 0) { // Log progress every 10 pages
+                    log.info("Processing page {} with {} orders", page, apiResponse.getContent().size());
+                }
+                
+                // Batch process orders
+                List<TrendyolOrder> ordersToSave = new ArrayList<>();
+                Set<String> existingPackages = new HashSet<>();
+                
+                // Check existing orders in batch
+                List<Long> packageNumbers = apiResponse.getContent().stream()
+                        .filter(order -> order.getId() != null)
+                        .map(TrendyolOrderApiResponse.TrendyolOrderContent::getId)
+                        .collect(Collectors.toList());
+                
+                if (!packageNumbers.isEmpty()) {
+                    Set<Long> existingPackageSet = new HashSet<>(orderRepository.findExistingPackageNumbers(storeId, packageNumbers));
+                    existingPackages = existingPackageSet.stream().map(String::valueOf).collect(Collectors.toSet());
+                }
                 
                 // Process orders in this page
                 for (TrendyolOrderApiResponse.TrendyolOrderContent orderContent : apiResponse.getContent()) {
                     try {
                         // Skip orders without cargoTrackingNumber (package number)
                         if (orderContent.getCargoTrackingNumber() == null || orderContent.getId() == null) {
-                            log.debug("Skipping order {} - no package number", orderContent.getOrderNumber());
                             skippedCount++;
                             continue;
                         }
                         
-                        // Check if order already exists
-                        if (orderRepository.existsByStoreIdAndPackageNo(storeId, orderContent.getId())) {
-                            log.debug("Order already exists for store {} and package {}", storeId, orderContent.getId());
+                        // Check if order already exists (from batch check)
+                        if (existingPackages.contains(orderContent.getId().toString())) {
                             skippedCount++;
                             continue;
                         }
                         
-                        // Convert and save order
-                        TrendyolOrder order = convertApiResponseToEntity(orderContent, store);
-                        orderRepository.save(order);
+                        // Convert order using product cache
+                        TrendyolOrder order = convertApiResponseToEntity(orderContent, store, productCache);
+                        ordersToSave.add(order);
                         savedCount++;
                         
-                        log.debug("Saved order: {} with package: {}", order.getTyOrderNumber(), order.getPackageNo());
-                        
                     } catch (Exception e) {
-                        log.error("Error processing order {}: {}", orderContent.getOrderNumber(), e.getMessage(), e);
+                        log.error("Error processing order {}: {}", orderContent.getOrderNumber(), e.getMessage());
                         skippedCount++;
+                    }
+                }
+                
+                // Batch save orders
+                if (!ordersToSave.isEmpty()) {
+                    orderRepository.saveAll(ordersToSave);
+                    if (page % 10 == 0) {
+                        log.info("Saved batch of {} orders", ordersToSave.size());
                     }
                 }
                 
@@ -240,6 +269,10 @@ public class TrendyolOrderService {
     }
     
     private TrendyolOrder convertApiResponseToEntity(TrendyolOrderApiResponse.TrendyolOrderContent orderContent, Store store) {
+        return convertApiResponseToEntity(orderContent, store, null);
+    }
+    
+    private TrendyolOrder convertApiResponseToEntity(TrendyolOrderApiResponse.TrendyolOrderContent orderContent, Store store, Map<String, TrendyolProduct> productCache) {
         // Convert milliseconds to LocalDateTime (Trendyol sends in GMT+3, keep it as is)
         LocalDateTime orderDate = Instant.ofEpochMilli(orderContent.getOriginShipmentDate())
                 .atZone(ZoneId.of("Europe/Istanbul")) // GMT+3 timezone
@@ -247,7 +280,7 @@ public class TrendyolOrderService {
         
         // Convert order lines to order items with cost information
         List<OrderItem> orderItems = orderContent.getLines().stream()
-                .map(line -> convertLineToOrderItem(line, store.getId(), orderDate))
+                .map(line -> convertLineToOrderItem(line, store.getId(), orderDate, productCache))
                 .collect(Collectors.toList());
         
         return TrendyolOrder.builder()
@@ -266,6 +299,10 @@ public class TrendyolOrderService {
     }
     
     private OrderItem convertLineToOrderItem(TrendyolOrderApiResponse.TrendyolOrderLine line, UUID storeId, LocalDateTime orderDate) {
+        return convertLineToOrderItem(line, storeId, orderDate, null);
+    }
+    
+    private OrderItem convertLineToOrderItem(TrendyolOrderApiResponse.TrendyolOrderLine line, UUID storeId, LocalDateTime orderDate, Map<String, TrendyolProduct> productCache) {
         OrderItem.OrderItemBuilder itemBuilder = OrderItem.builder()
                 .barcode(line.getBarcode())
                 .productName(line.getProductName())
@@ -278,11 +315,17 @@ public class TrendyolOrderService {
         
         // Try to get cost information from our trendyol_products table
         if (line.getBarcode() != null && !line.getBarcode().isEmpty()) {
-            Optional<TrendyolProduct> productOpt = productRepository.findByStoreIdAndBarcode(storeId, line.getBarcode());
+            TrendyolProduct product = null;
             
-            if (productOpt.isPresent()) {
-                TrendyolProduct product = productOpt.get();
-                
+            // Use cache if available, otherwise query database
+            if (productCache != null) {
+                product = productCache.get(line.getBarcode());
+            } else {
+                Optional<TrendyolProduct> productOpt = productRepository.findByStoreIdAndBarcode(storeId, line.getBarcode());
+                product = productOpt.orElse(null);
+            }
+            
+            if (product != null) {
                 // Get the appropriate cost information based on order date
                 if (!product.getCostAndStockInfo().isEmpty()) {
                     // Sort cost and stock info by date (earliest first)
