@@ -38,6 +38,49 @@ public interface TrendyolOrderRepository extends JpaRepository<TrendyolOrder, UU
     @Query("SELECT o.packageNo FROM TrendyolOrder o WHERE o.store.id = :storeId AND o.packageNo IN :packageNumbers")
     List<Long> findExistingPackageNumbers(@Param("storeId") UUID storeId, @Param("packageNumbers") List<Long> packageNumbers);
     
+    // Dashboard Stats Queries
+    
+    // Find orders for revenue calculation (excluding cancelled, returned etc.)
+    @Query("SELECT o FROM TrendyolOrder o WHERE o.store.id = :storeId " +
+           "AND o.orderDate BETWEEN :startDate AND :endDate " +
+           "AND o.status IN ('Created', 'Picking', 'Invoiced', 'Shipped', 'Delivered', 'AtCollectionPoint', 'UnPacked')")
+    List<TrendyolOrder> findRevenueOrdersByStoreAndDateRange(@Param("storeId") UUID storeId,
+                                                           @Param("startDate") LocalDateTime startDate,
+                                                           @Param("endDate") LocalDateTime endDate);
+    
+    // Find returned orders
+    @Query("SELECT o FROM TrendyolOrder o WHERE o.store.id = :storeId " +
+           "AND o.orderDate BETWEEN :startDate AND :endDate " +
+           "AND o.status IN ('Returned')")
+    List<TrendyolOrder> findReturnedOrdersByStoreAndDateRange(@Param("storeId") UUID storeId,
+                                                            @Param("startDate") LocalDateTime startDate,
+                                                            @Param("endDate") LocalDateTime endDate);
+    
+    // Count orders with items that have costs vs without costs
+    @Query(value = "SELECT COUNT(DISTINCT o.id) " +
+                   "FROM trendyol_orders o " +
+                   "WHERE o.store_id = :storeId " +
+                   "AND o.order_date BETWEEN :startDate AND :endDate " +
+                   "AND o.status IN ('Created', 'Picking', 'Invoiced', 'Shipped', 'Delivered', 'AtCollectionPoint', 'UnPacked') " +
+                   "AND EXISTS (SELECT 1 FROM jsonb_array_elements(o.order_items) AS item " +
+                   "            WHERE (item->>'cost') IS NOT NULL)", 
+           nativeQuery = true)
+    Long countOrdersWithCosts(@Param("storeId") UUID storeId,
+                             @Param("startDate") LocalDateTime startDate,
+                             @Param("endDate") LocalDateTime endDate);
+    
+    @Query(value = "SELECT COUNT(DISTINCT o.id) " +
+                   "FROM trendyol_orders o " +
+                   "WHERE o.store_id = :storeId " +
+                   "AND o.order_date BETWEEN :startDate AND :endDate " +
+                   "AND o.status IN ('Created', 'Picking', 'Invoiced', 'Shipped', 'Delivered', 'AtCollectionPoint', 'UnPacked') " +
+                   "AND EXISTS (SELECT 1 FROM jsonb_array_elements(o.order_items) AS item " +
+                   "            WHERE (item->>'cost') IS NULL)", 
+           nativeQuery = true)
+    Long countOrdersWithoutCosts(@Param("storeId") UUID storeId,
+                                @Param("startDate") LocalDateTime startDate,
+                                @Param("endDate") LocalDateTime endDate);
+    
     // Find orders by status
     @Query("SELECT o FROM TrendyolOrder o WHERE o.store.id = :storeId AND o.status = :status ORDER BY o.orderDate DESC")
     Page<TrendyolOrder> findByStoreAndStatus(@Param("storeId") UUID storeId, 

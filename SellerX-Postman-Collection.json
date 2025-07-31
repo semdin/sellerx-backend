@@ -266,7 +266,7 @@
       "description": "Business intelligence endpoints providing sales statistics, performance metrics and analytical data",
       "item": [
         {
-          "name": "Get Dashboard Stats",
+          "name": "Get Dashboard Stats (Demo - Empty Data)",
           "request": {
             "method": "GET",
             "header": [
@@ -278,6 +278,23 @@
               "host": ["localhost"],
               "port": "8080",
               "path": ["dashboard", "stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dashboard Stats by Store",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/dashboard/stats/{{store_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["dashboard", "stats", "{{store_id}}"]
             }
           },
           "response": []

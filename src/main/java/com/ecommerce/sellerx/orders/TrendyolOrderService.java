@@ -13,6 +13,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -290,6 +291,14 @@ public class TrendyolOrderService {
                 .map(line -> convertLineToOrderItem(line, store.getId(), orderDate, productCache))
                 .collect(Collectors.toList());
         
+        // Calculate total price from order items
+        BigDecimal totalPrice = orderItems.stream()
+                .map(item -> {
+                    BigDecimal itemPrice = item.getPrice() != null ? item.getPrice() : BigDecimal.ZERO;
+                    return itemPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
         return TrendyolOrder.builder()
                 .store(store)
                 .tyOrderNumber(orderContent.getOrderNumber())
@@ -298,6 +307,7 @@ public class TrendyolOrderService {
                 .grossAmount(orderContent.getGrossAmount())
                 .totalDiscount(orderContent.getTotalDiscount())
                 .totalTyDiscount(orderContent.getTotalTyDiscount())
+                .totalPrice(totalPrice)
                 .orderItems(orderItems)
                 .shipmentPackageStatus(orderContent.getShipmentPackageStatus())
                 .status(orderContent.getStatus())
