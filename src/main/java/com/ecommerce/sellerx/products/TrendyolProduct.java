@@ -99,6 +99,8 @@ public class TrendyolProduct {
     @Type(JsonBinaryType.class)
     @Column(name = "cost_and_stock_info", columnDefinition = "jsonb")
     @Builder.Default
+    @com.fasterxml.jackson.annotation.JsonProperty("costAndStockInfo")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
     private List<CostAndStockInfo> costAndStockInfo = new ArrayList<>();
     
     @Column(name = "created_at")

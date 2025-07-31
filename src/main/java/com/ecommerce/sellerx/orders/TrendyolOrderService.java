@@ -32,6 +32,7 @@ public class TrendyolOrderService {
     private final TrendyolOrderMapper orderMapper;
     private final RestTemplate restTemplate;
     private final OrderCostCalculator costCalculator;
+    private final StockOrderSynchronizationService stockOrderSyncService;
 
     /**
      * Fetch and save orders for a specific store from Trendyol API
@@ -170,6 +171,14 @@ public class TrendyolOrderService {
                     orderRepository.saveAll(ordersToSave);
                     if (page % 10 == 0) {
                         log.info("Saved batch of {} orders", ordersToSave.size());
+                    }
+                    
+                    // Trigger stock-order synchronization for newly saved orders
+                    try {
+                        stockOrderSyncService.synchronizeOrdersAfterStockChange(storeId, null);
+                        log.debug("Triggered stock-order synchronization after saving {} orders", ordersToSave.size());
+                    } catch (Exception e) {
+                        log.warn("Failed to synchronize stock-order after saving orders: {}", e.getMessage());
                     }
                 }
                 

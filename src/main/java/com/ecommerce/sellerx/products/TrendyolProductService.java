@@ -1,5 +1,6 @@
 package com.ecommerce.sellerx.products;
 
+import com.ecommerce.sellerx.orders.StockOrderSynchronizationService;
 import com.ecommerce.sellerx.stores.Store;
 import com.ecommerce.sellerx.stores.StoreRepository;
 import com.ecommerce.sellerx.stores.StoreNotFoundException;
@@ -34,6 +35,7 @@ public class TrendyolProductService {
     private final StoreRepository storeRepository;
     private final TrendyolProductMapper productMapper;
     private final RestTemplate restTemplate;
+    private final StockOrderSynchronizationService stockOrderSyncService;
     
     /**
      * Helper method to compare BigDecimal values properly
@@ -394,6 +396,16 @@ public class TrendyolProductService {
         product.setCostAndStockInfo(costAndStockList);
         
         TrendyolProduct savedProduct = trendyolProductRepository.save(product);
+        
+        // Trigger stock-order synchronization after adding stock
+        try {
+            UUID storeId = savedProduct.getStore().getId();
+            log.info("Triggering stock-order synchronization after adding stock for product {} in store {}", productId, storeId);
+            stockOrderSyncService.synchronizeOrdersAfterStockChange(storeId, newInfo.getStockDate());
+        } catch (Exception e) {
+            log.warn("Failed to trigger stock-order synchronization after adding stock: {}", e.getMessage());
+        }
+        
         return productMapper.toDto(savedProduct);
     }
     
@@ -425,6 +437,16 @@ public class TrendyolProductService {
         product.setCostAndStockInfo(costAndStockList);
         
         TrendyolProduct savedProduct = trendyolProductRepository.save(product);
+        
+        // Trigger stock-order synchronization after updating stock
+        try {
+            UUID storeId = savedProduct.getStore().getId();
+            log.info("Triggering stock-order synchronization after updating stock for product {} in store {} on date {}", productId, storeId, stockDate);
+            stockOrderSyncService.synchronizeOrdersAfterStockChange(storeId, stockDate);
+        } catch (Exception e) {
+            log.warn("Failed to trigger stock-order synchronization after updating stock: {}", e.getMessage());
+        }
+        
         return productMapper.toDto(savedProduct);
     }
     
@@ -447,6 +469,16 @@ public class TrendyolProductService {
         product.setCostAndStockInfo(costAndStockList);
         
         TrendyolProduct savedProduct = trendyolProductRepository.save(product);
+        
+        // Trigger stock-order synchronization after deleting stock
+        try {
+            UUID storeId = savedProduct.getStore().getId();
+            log.info("Triggering stock-order synchronization after deleting stock for product {} in store {} on date {}", productId, storeId, stockDate);
+            stockOrderSyncService.synchronizeOrdersAfterStockChange(storeId, stockDate);
+        } catch (Exception e) {
+            log.warn("Failed to trigger stock-order synchronization after deleting stock: {}", e.getMessage());
+        }
+        
         return productMapper.toDto(savedProduct);
     }
     

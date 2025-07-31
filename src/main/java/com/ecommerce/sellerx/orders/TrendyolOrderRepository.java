@@ -49,4 +49,14 @@ public interface TrendyolOrderRepository extends JpaRepository<TrendyolOrder, UU
     
     // Get orders count by store and status
     long countByStoreIdAndStatus(UUID storeId, String status);
+    
+    // Find orders containing specific product from a date onwards
+    @Query(value = "SELECT * FROM trendyol_orders o WHERE o.store_id = :storeId " +
+           "AND o.order_date >= :fromDate " +
+           "AND EXISTS (SELECT 1 FROM jsonb_array_elements(o.order_items) AS item " +
+           "WHERE item->>'barcode' = :barcode) " +
+           "ORDER BY o.order_date ASC", nativeQuery = true)
+    List<TrendyolOrder> findOrdersWithProductFromDate(@Param("storeId") UUID storeId, 
+                                                      @Param("barcode") String barcode, 
+                                                      @Param("fromDate") LocalDateTime fromDate);
 }

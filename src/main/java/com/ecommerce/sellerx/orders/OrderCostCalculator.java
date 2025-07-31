@@ -24,7 +24,7 @@ public class OrderCostCalculator {
     private final TrendyolProductRepository productRepository;
     
     /**
-     * Calculate and set cost information for an OrderItem builder
+     * Calculate and set cost information for an OrderItem builder using FIFO allocation
      */
     public void setCostInfo(OrderItem.OrderItemBuilder itemBuilder, String barcode, UUID storeId, 
                            LocalDateTime orderDate, Map<String, TrendyolProduct> productCache) {
@@ -43,17 +43,19 @@ public class OrderCostCalculator {
         }
         
         if (product != null) {
-            CostAndStockInfo appropriateCost = findAppropriateCostForProduct(product, orderDate.toLocalDate());
+            // Find the first available stock entry using FIFO logic
+            CostAndStockInfo appropriateCost = findFirstAvailableStockForOrder(product, orderDate.toLocalDate());
             
             if (appropriateCost != null) {
                 itemBuilder.cost(appropriateCost.getUnitCost() != null ? 
                                 BigDecimal.valueOf(appropriateCost.getUnitCost()) : null)
-                          .costVat(appropriateCost.getCostVatRate());
+                          .costVat(appropriateCost.getCostVatRate())
+                          .stockDate(appropriateCost.getStockDate()); // Set the stock date for tracking
                 
-                log.debug("Found cost {} for product {} on order date {}", 
-                        appropriateCost.getUnitCost(), barcode, orderDate);
+                log.debug("Found cost {} from stock date {} for product {} on order date {}", 
+                        appropriateCost.getUnitCost(), appropriateCost.getStockDate(), barcode, orderDate);
             } else {
-                log.debug("No appropriate cost found for product {} on order date {}", 
+                log.debug("No available stock found for product {} on order date {}", 
                         barcode, orderDate);
             }
         } else {
@@ -115,5 +117,25 @@ public class OrderCostCalculator {
         }
         
         return appropriateCost;
+    }
+    
+    /**
+     * Find the first available stock entry for an order using FIFO logic
+     * This method should ideally coordinate with StockOrderSynchronizationService
+     * but for now provides basic FIFO selection
+     */
+    private CostAndStockInfo findFirstAvailableStockForOrder(TrendyolProduct product, LocalDate orderDate) {
+        if (product.getCostAndStockInfo() == null || product.getCostAndStockInfo().isEmpty()) {
+            return null;
+        }
+        
+        // Get stock entries sorted by date (FIFO)
+        return product.getCostAndStockInfo().stream()
+                .filter(stock -> stock.getStockDate() != null)
+                .filter(stock -> !stock.getStockDate().isAfter(orderDate)) // Stock must exist before order
+                .filter(stock -> stock.getRemainingQuantity() > 0) // Must have remaining stock
+                .sorted((s1, s2) -> s1.getStockDate().compareTo(s2.getStockDate())) // FIFO order
+                .findFirst()
+                .orElse(null);
     }
 }

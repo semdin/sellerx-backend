@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Data
 @Builder
@@ -41,4 +42,7 @@ public class OrderItem {
     
     @JsonProperty("costVat")
     private Integer costVat; // VAT rate for cost calculation
+    
+    @JsonProperty("stockDate")
+    private LocalDate stockDate; // Which stock date this order item was sourced from
 }
