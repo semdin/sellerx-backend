@@ -13,7 +13,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -97,6 +99,8 @@ public class DashboardStatsService {
                 .grossProfit(grossProfit)
                 .vatDifference(vatDifference)
                 .itemsWithoutCost(itemsWithoutCost)
+                .orders(calculateOrderDetails(revenueOrders, returnedOrders))
+                .products(calculateProductDetails(revenueOrders, returnedOrders))
                 .build();
     }
     
@@ -213,5 +217,121 @@ public class DashboardStatsService {
         public int getItemsWithoutCost() {
             return itemsWithoutCost;
         }
+    }
+    
+    private List<OrderDetailDto> calculateOrderDetails(List<TrendyolOrder> revenueOrders, List<TrendyolOrder> returnedOrders) {
+        return revenueOrders.stream()
+                .map(order -> {
+                    // Siparişin ürünlerini listele
+                    List<OrderProductDetailDto> products = order.getOrderItems().stream()
+                            .map(item -> OrderProductDetailDto.builder()
+                                    .productName(item.getProductName())
+                                    .quantity(item.getQuantity())
+                                    .build())
+                            .toList();
+                    
+                    // Sipariş için ciro hesaplama (gross_amount - total_discount)
+                    BigDecimal grossAmount = order.getGrossAmount() != null ? order.getGrossAmount() : BigDecimal.ZERO;
+                    BigDecimal totalDiscount = order.getTotalDiscount() != null ? order.getTotalDiscount() : BigDecimal.ZERO;
+                    BigDecimal orderRevenue = grossAmount.subtract(totalDiscount);
+                    
+                    // Sipariş için toplam maliyet hesaplama
+                    BigDecimal orderTotalCost = order.getOrderItems().stream()
+                            .filter(item -> item.getCost() != null && item.getCost().compareTo(BigDecimal.ZERO) > 0)
+                            .map(item -> item.getCost().multiply(BigDecimal.valueOf(item.getQuantity())))
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    
+                    // Brüt kar hesaplama
+                    BigDecimal orderGrossProfit = orderRevenue.subtract(orderTotalCost);
+                    
+                    // İade fiyatı (şimdilik 0, gerekirse daha sonra hesaplanabilir)
+                    BigDecimal returnPrice = BigDecimal.ZERO;
+                    
+                    return OrderDetailDto.builder()
+                            .orderNumber(order.getTyOrderNumber())
+                            .orderDate(order.getOrderDate())
+                            .products(products)
+                            .totalPrice(grossAmount)
+                            .returnPrice(returnPrice)
+                            .revenue(orderRevenue)
+                            .grossProfit(orderGrossProfit)
+                            .build();
+                })
+                .toList();
+    }
+    
+    private List<ProductDetailDto> calculateProductDetails(List<TrendyolOrder> revenueOrders, List<TrendyolOrder> returnedOrders) {
+        Map<String, ProductDetailDto.ProductDetailDtoBuilder> productMap = new HashMap<>();
+        
+        // Revenue siparişlerinden ürün bilgilerini topla
+        for (TrendyolOrder order : revenueOrders) {
+            for (OrderItem item : order.getOrderItems()) {
+                String barcode = item.getBarcode();
+                String productName = item.getProductName();
+                ProductDetailDto.ProductDetailDtoBuilder builder = productMap.computeIfAbsent(barcode, 
+                        k -> ProductDetailDto.builder()
+                                .productName(productName)
+                                .barcode(barcode)
+                                .totalSoldQuantity(0)
+                                .returnQuantity(0)
+                                .revenue(BigDecimal.ZERO)
+                                .grossProfit(BigDecimal.ZERO));
+                
+                // Mevcut bilgileri al
+                ProductDetailDto current = builder.build();
+                
+                // Satış miktarını ekle
+                int newTotalSold = current.getTotalSoldQuantity() + item.getQuantity();
+                
+                // Ürün için ciro hesaplama (price * quantity)
+                BigDecimal itemRevenue = item.getPrice() != null ? 
+                        item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())) : BigDecimal.ZERO;
+                BigDecimal newRevenue = current.getRevenue().add(itemRevenue);
+                
+                // Ürün için maliyet ve brüt kar hesaplama
+                BigDecimal itemCost = BigDecimal.ZERO;
+                if (item.getCost() != null && item.getCost().compareTo(BigDecimal.ZERO) > 0) {
+                    itemCost = item.getCost().multiply(BigDecimal.valueOf(item.getQuantity()));
+                }
+                BigDecimal itemGrossProfit = itemRevenue.subtract(itemCost);
+                BigDecimal newGrossProfit = current.getGrossProfit().add(itemGrossProfit);
+                
+                // Builder'ı güncelle
+                productMap.put(barcode, ProductDetailDto.builder()
+                        .productName(productName)
+                        .barcode(barcode)
+                        .totalSoldQuantity(newTotalSold)
+                        .returnQuantity(current.getReturnQuantity()) // İade miktarı aynı kalır bu döngüde
+                        .revenue(newRevenue)
+                        .grossProfit(newGrossProfit));
+            }
+        }
+        
+        // İade siparişlerinden iade miktarlarını ekle
+        for (TrendyolOrder order : returnedOrders) {
+            for (OrderItem item : order.getOrderItems()) {
+                String barcode = item.getBarcode();
+                String productName = item.getProductName();
+                ProductDetailDto.ProductDetailDtoBuilder builder = productMap.get(barcode);
+                
+                if (builder != null) {
+                    ProductDetailDto current = builder.build();
+                    int newReturnQuantity = current.getReturnQuantity() + item.getQuantity();
+                    
+                    // Builder'ı güncelle
+                    productMap.put(barcode, ProductDetailDto.builder()
+                            .productName(productName)
+                            .barcode(barcode)
+                            .totalSoldQuantity(current.getTotalSoldQuantity())
+                            .returnQuantity(newReturnQuantity)
+                            .revenue(current.getRevenue())
+                            .grossProfit(current.getGrossProfit()));
+                }
+            }
+        }
+        
+        return productMap.values().stream()
+                .map(ProductDetailDto.ProductDetailDtoBuilder::build)
+                .toList();
     }
 }

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @Builder
@@ -36,4 +37,8 @@ public class DashboardStatsDto {
     
     // Items without cost calculation
     private Integer itemsWithoutCost; // Maliyeti olmayan ürün sayısı
+    
+    // Detailed data
+    private List<OrderDetailDto> orders; // Siparişlerin detayları
+    private List<ProductDetailDto> products; // Ürünlerin detayları
 }
