@@ -142,27 +142,53 @@ public class DashboardStatsService {
         
         for (TrendyolOrder order : orders) {
             for (OrderItem item : order.getOrderItems()) {
+                // Only calculate VAT difference if both cost and price exist
                 if (item.getPrice() != null && item.getCost() != null && 
                     item.getPrice().compareTo(BigDecimal.ZERO) > 0 && 
                     item.getCost().compareTo(BigDecimal.ZERO) > 0) {
                     
-                    // Sales price (with VAT)
-                    BigDecimal salesPrice = item.getPrice();
+                    // Sales VAT (Tahsil Edilen KDV) - Calculate from price using vatBaseAmount as rate
+                    BigDecimal salesVat;
+                    if (item.getVatBaseAmount() != null && item.getVatBaseAmount().compareTo(BigDecimal.ZERO) > 0) {
+                        // vatBaseAmount is actually the VAT rate (e.g., 20 for 20%)
+                        BigDecimal salesVatRate = item.getVatBaseAmount().divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                        BigDecimal salesPriceIncludingVat = item.getPrice();
+                        
+                        // Formula: Sales VAT = (Sales Price (VAT Included) / (1 + VAT Rate)) × VAT Rate
+                        BigDecimal salesPriceExcludingVat = salesPriceIncludingVat.divide(
+                                BigDecimal.ONE.add(salesVatRate), 4, RoundingMode.HALF_UP);
+                        salesVat = salesPriceExcludingVat.multiply(salesVatRate);
+                    } else {
+                        // Fallback: Calculate from price assuming 20% VAT
+                        BigDecimal salesPrice = item.getPrice();
+                        salesVat = salesPrice.multiply(BigDecimal.valueOf(0.20))
+                                .divide(BigDecimal.valueOf(1.20), 2, RoundingMode.HALF_UP);
+                    }
                     
-                    // Sales VAT (assuming 20% VAT rate)
-                    BigDecimal salesVat = salesPrice.multiply(BigDecimal.valueOf(0.20))
-                            .divide(BigDecimal.valueOf(1.20), 2, RoundingMode.HALF_UP);
+                    // Cost VAT (Ödenen KDV) - Calculate using actual costVat rate
+                    BigDecimal costVat = BigDecimal.ZERO;
+                    if (item.getCostVat() != null && item.getCostVat() > 0) {
+                        // costVat is the VAT rate (e.g., 20 for 20%)
+                        BigDecimal costVatRate = BigDecimal.valueOf(item.getCostVat()).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                        BigDecimal costIncludingVat = item.getCost();
+                        
+                        // Formula: Cost VAT = (Cost (VAT Included) / (1 + VAT Rate)) × VAT Rate
+                        BigDecimal costExcludingVat = costIncludingVat.divide(
+                                BigDecimal.ONE.add(costVatRate), 4, RoundingMode.HALF_UP);
+                        costVat = costExcludingVat.multiply(costVatRate);
+                    }
                     
-                    // Cost VAT (assuming 20% VAT rate on cost)
-                    BigDecimal costVat = item.getCost().multiply(BigDecimal.valueOf(0.20));
-                    
-                    // VAT difference per item
+                    // VAT difference per item (Net KDV Farkı)
+                    // KDV Farkı = Satış KDV − Alış KDV
                     BigDecimal vatDifferencePerItem = salesVat.subtract(costVat);
                     
-                    // Total VAT difference for this item
+                    // Total VAT difference for this item (multiply by quantity)
                     BigDecimal itemVatDifference = vatDifferencePerItem.multiply(BigDecimal.valueOf(item.getQuantity()));
                     
                     totalVatDifference = totalVatDifference.add(itemVatDifference);
+                    
+                    log.debug("VAT calculation for {}: Sales VAT={}, Cost VAT={}, Difference={}, Quantity={}, Total Diff={}", 
+                            item.getBarcode(), salesVat, costVat, vatDifferencePerItem, item.getQuantity(), itemVatDifference);
                 }
             }
         }
