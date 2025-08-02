@@ -4,6 +4,8 @@ import com.ecommerce.sellerx.stores.Store;
 import com.ecommerce.sellerx.products.TrendyolProduct;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,6 +43,7 @@ public class StoreExpense {
     
     @Enumerated(EnumType.STRING)
     @Column(name = "frequency", nullable = false, columnDefinition = "expense_frequency")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private ExpenseFrequency frequency;
     
     @Column(name = "name", nullable = false)
