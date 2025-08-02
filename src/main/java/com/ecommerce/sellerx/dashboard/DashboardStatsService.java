@@ -12,6 +12,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -25,17 +26,22 @@ public class DashboardStatsService {
     
     private final TrendyolOrderRepository orderRepository;
     
+    // Turkey timezone
+    private static final ZoneId TURKEY_ZONE = ZoneId.of("Europe/Istanbul");
+    
     // Return cost per item (50 TL for now)
     private static final BigDecimal RETURN_COST_PER_ITEM = BigDecimal.valueOf(50);
     
     public DashboardStatsResponse getStatsForStore(UUID storeId) {
         log.info("Calculating dashboard stats for store: {}", storeId);
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(TURKEY_ZONE);
         LocalDate yesterday = today.minusDays(1);
         LocalDate firstDayOfMonth = today.withDayOfMonth(1);
         LocalDate firstDayOfLastMonth = today.minusMonths(1).withDayOfMonth(1);
         LocalDate lastDayOfLastMonth = today.withDayOfMonth(1).minusDays(1);
+        
+        log.info("Current Turkey date: {}", today);
         
         DashboardStatsDto todayStats = calculateStatsForPeriod(storeId, "today", today, today);
         DashboardStatsDto yesterdayStats = calculateStatsForPeriod(storeId, "yesterday", yesterday, yesterday);
@@ -48,7 +54,7 @@ public class DashboardStatsService {
                 .thisMonth(thisMonthStats)
                 .lastMonth(lastMonthStats)
                 .storeId(storeId.toString())
-                .calculatedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+                .calculatedAt(LocalDateTime.now(TURKEY_ZONE).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                 .build();
     }
     

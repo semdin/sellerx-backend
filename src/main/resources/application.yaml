@@ -21,6 +21,9 @@ spring:
     accessTokenExpiration: 3600 # 1h - test
     refreshTokenExpiration: 604800 # 7d
 
+# Turkey timezone configuration
+timezone: Europe/Istanbul
+
 # Webhook configuration
 app:
   webhook:
