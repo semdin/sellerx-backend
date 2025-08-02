@@ -39,7 +39,12 @@ public class DashboardStatsDto {
     // Items without cost calculation
     private Integer itemsWithoutCost; // Maliyeti olmayan ürün sayısı
     
+    // Expense stats
+    private Integer totalExpenseNumber; // Toplam masraf kalem sayısı
+    private BigDecimal totalExpenseAmount; // Toplam masraf tutarı
+    
     // Detailed data
     private List<OrderDetailDto> orders; // Siparişlerin detayları
     private List<ProductDetailDto> products; // Ürünlerin detayları
+    private List<PeriodExpenseDto> expenses; // Dönem masrafları
 }

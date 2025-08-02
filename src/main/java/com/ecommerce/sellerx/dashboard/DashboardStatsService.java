@@ -1,5 +1,8 @@
 package com.ecommerce.sellerx.dashboard;
 
+import com.ecommerce.sellerx.expenses.ExpenseFrequency;
+import com.ecommerce.sellerx.expenses.StoreExpense;
+import com.ecommerce.sellerx.expenses.StoreExpenseRepository;
 import com.ecommerce.sellerx.orders.OrderItem;
 import com.ecommerce.sellerx.orders.TrendyolOrder;
 import com.ecommerce.sellerx.orders.TrendyolOrderRepository;
@@ -25,6 +28,7 @@ import java.util.UUID;
 public class DashboardStatsService {
     
     private final TrendyolOrderRepository orderRepository;
+    private final StoreExpenseRepository storeExpenseRepository;
     
     // Turkey timezone
     private static final ZoneId TURKEY_ZONE = ZoneId.of("Europe/Istanbul");
@@ -97,6 +101,15 @@ public class DashboardStatsService {
         // Calculate total stoppage
         BigDecimal totalStoppage = calculateTotalStoppage(revenueOrders);
         
+        // Calculate period expenses
+        List<PeriodExpenseDto> expenses = calculatePeriodExpenses(storeId, startDate, endDate);
+        
+        // Calculate expense summary
+        int totalExpenseNumber = expenses.size();
+        BigDecimal totalExpenseAmount = expenses.stream()
+                .map(PeriodExpenseDto::expenseTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
         return DashboardStatsDto.builder()
                 .period(period)
                 .totalOrders(totalOrders)
@@ -109,8 +122,11 @@ public class DashboardStatsService {
                 .vatDifference(vatDifference)
                 .totalStoppage(totalStoppage)
                 .itemsWithoutCost(itemsWithoutCost)
+                .totalExpenseNumber(totalExpenseNumber)
+                .totalExpenseAmount(totalExpenseAmount)
                 .orders(calculateOrderDetails(revenueOrders, returnedOrders))
                 .products(calculateProductDetails(revenueOrders, returnedOrders))
+                .expenses(expenses)
                 .build();
     }
     
@@ -353,5 +369,138 @@ public class DashboardStatsService {
         return productMap.values().stream()
                 .map(ProductDetailDto.ProductDetailDtoBuilder::build)
                 .toList();
+    }
+    
+    private List<PeriodExpenseDto> calculatePeriodExpenses(UUID storeId, LocalDate startDate, LocalDate endDate) {
+        log.debug("Calculating expenses for store {} from {} to {}", storeId, startDate, endDate);
+        
+        // Get all expenses for the store
+        List<StoreExpense> allExpenses = storeExpenseRepository.findByStoreIdOrderByDateDesc(storeId);
+        
+        Map<String, PeriodExpenseDto> expenseMap = new HashMap<>();
+        
+        for (StoreExpense expense : allExpenses) {
+            int quantity = calculateExpenseQuantityForPeriod(expense, startDate, endDate);
+            
+            if (quantity > 0) {
+                String key = expense.getName() + "_" + expense.getFrequency();
+                BigDecimal totalAmount = expense.getAmount().multiply(BigDecimal.valueOf(quantity));
+                
+                expenseMap.merge(key, 
+                    new PeriodExpenseDto(
+                        expense.getName(),
+                        quantity,
+                        totalAmount,
+                        expense.getFrequency()
+                    ),
+                    (existing, replacement) -> new PeriodExpenseDto(
+                        existing.expenseName(),
+                        existing.expenseQuantity() + replacement.expenseQuantity(),
+                        existing.expenseTotal().add(replacement.expenseTotal()),
+                        existing.expenseFrequency()
+                    )
+                );
+            }
+        }
+        
+        return expenseMap.values().stream().toList();
+    }
+    
+    private int calculateExpenseQuantityForPeriod(StoreExpense expense, LocalDate startDate, LocalDate endDate) {
+        LocalDate expenseDate = expense.getDate().toLocalDate();
+        
+        // If it's a one-time expense, check if it falls within the period
+        if (expense.getFrequency() == ExpenseFrequency.ONE_TIME) {
+            return (expenseDate.isEqual(startDate) || expenseDate.isAfter(startDate)) && 
+                   (expenseDate.isEqual(endDate) || expenseDate.isBefore(endDate)) ? 1 : 0;
+        }
+        
+        return switch (expense.getFrequency()) {
+            case DAILY -> calculateDailyExpenseQuantity(expenseDate, startDate, endDate);
+            case WEEKLY -> calculateWeeklyExpenseQuantity(expenseDate, startDate, endDate);
+            case MONTHLY -> calculateMonthlyExpenseQuantity(expenseDate, startDate, endDate);
+            case YEARLY -> calculateYearlyExpenseQuantity(expenseDate, startDate, endDate);
+            default -> 0;
+        };
+    }
+    
+    private int calculateDailyExpenseQuantity(LocalDate expenseDate, LocalDate startDate, LocalDate endDate) {
+        // For daily expenses, count the number of days in the period
+        // Only count if expense was created before or during the period
+        if (expenseDate.isAfter(endDate)) {
+            return 0;
+        }
+        
+        LocalDate effectiveStart = expenseDate.isAfter(startDate) ? expenseDate : startDate;
+        
+        return (int) (endDate.toEpochDay() - effectiveStart.toEpochDay() + 1);
+    }
+    
+    private int calculateWeeklyExpenseQuantity(LocalDate expenseDate, LocalDate startDate, LocalDate endDate) {
+        // For weekly expenses, count Mondays in the period (or the day of week when expense was created)
+        if (expenseDate.isAfter(endDate)) {
+            return 0;
+        }
+        
+        int dayOfWeek = expenseDate.getDayOfWeek().getValue(); // 1=Monday, 7=Sunday
+        LocalDate current = startDate;
+        int count = 0;
+        
+        while (!current.isAfter(endDate)) {
+            if (current.getDayOfWeek().getValue() == dayOfWeek && !current.isBefore(expenseDate)) {
+                count++;
+            }
+            current = current.plusDays(1);
+        }
+        
+        return count;
+    }
+    
+    private int calculateMonthlyExpenseQuantity(LocalDate expenseDate, LocalDate startDate, LocalDate endDate) {
+        // For monthly expenses, count if the first day of any month in the period falls within our range
+        // and the expense was created before that month
+        if (expenseDate.isAfter(endDate)) {
+            return 0;
+        }
+        
+        LocalDate current = startDate.withDayOfMonth(1); // Start from first day of start month
+        int count = 0;
+        
+        while (!current.isAfter(endDate)) {
+            // Check if this month's first day is within our period and after expense creation
+            if (!current.isBefore(startDate) && 
+                !current.isAfter(endDate) && 
+                !current.isBefore(expenseDate)) {
+                count++;
+            }
+            
+            current = current.plusMonths(1).withDayOfMonth(1); // Move to first day of next month
+        }
+        
+        return count;
+    }
+    
+    private int calculateYearlyExpenseQuantity(LocalDate expenseDate, LocalDate startDate, LocalDate endDate) {
+        // For yearly expenses, count if January 1st of any year in the period falls within our range
+        // and the expense was created before that year
+        if (expenseDate.isAfter(endDate)) {
+            return 0;
+        }
+        
+        int startYear = startDate.getYear();
+        int endYear = endDate.getYear();
+        int count = 0;
+        
+        for (int year = startYear; year <= endYear; year++) {
+            LocalDate yearlyExpenseDate = LocalDate.of(year, 1, 1); // January 1st
+            
+            if (!yearlyExpenseDate.isBefore(startDate) && 
+                !yearlyExpenseDate.isAfter(endDate) && 
+                !yearlyExpenseDate.isBefore(expenseDate)) {
+                count++;
+            }
+        }
+        
+        return count;
     }
 }
