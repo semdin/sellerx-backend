@@ -94,6 +94,9 @@ public class DashboardStatsService {
         // Calculate VAT difference
         BigDecimal vatDifference = calculateVatDifference(revenueOrders);
         
+        // Calculate total stoppage
+        BigDecimal totalStoppage = calculateTotalStoppage(revenueOrders);
+        
         return DashboardStatsDto.builder()
                 .period(period)
                 .totalOrders(totalOrders)
@@ -104,6 +107,7 @@ public class DashboardStatsService {
                 .totalProductCosts(totalProductCosts)
                 .grossProfit(grossProfit)
                 .vatDifference(vatDifference)
+                .totalStoppage(totalStoppage)
                 .itemsWithoutCost(itemsWithoutCost)
                 .orders(calculateOrderDetails(revenueOrders, returnedOrders))
                 .products(calculateProductDetails(revenueOrders, returnedOrders))
@@ -206,6 +210,12 @@ public class DashboardStatsService {
         return totalVatDifference;
     }
     
+    private BigDecimal calculateTotalStoppage(List<TrendyolOrder> orders) {
+        return orders.stream()
+                .map(order -> order.getStoppage() != null ? order.getStoppage() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    
     // Helper class for product cost calculation result
     private static class ProductCostResult {
         private final BigDecimal totalCosts;
@@ -253,6 +263,9 @@ public class DashboardStatsService {
                     // İade fiyatı (şimdilik 0, gerekirse daha sonra hesaplanabilir)
                     BigDecimal returnPrice = BigDecimal.ZERO;
                     
+                    // Stoppage amount
+                    BigDecimal stoppage = order.getStoppage() != null ? order.getStoppage() : BigDecimal.ZERO;
+                    
                     return OrderDetailDto.builder()
                             .orderNumber(order.getTyOrderNumber())
                             .orderDate(order.getOrderDate())
@@ -261,6 +274,7 @@ public class DashboardStatsService {
                             .returnPrice(returnPrice)
                             .revenue(orderRevenue)
                             .grossProfit(orderGrossProfit)
+                            .stoppage(stoppage)
                             .build();
                 })
                 .toList();

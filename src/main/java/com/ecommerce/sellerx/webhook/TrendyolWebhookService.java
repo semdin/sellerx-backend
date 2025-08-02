@@ -1,5 +1,6 @@
 package com.ecommerce.sellerx.webhook;
 
+import com.ecommerce.sellerx.config.FinancialConstants;
 import com.ecommerce.sellerx.orders.OrderCostCalculator;
 import com.ecommerce.sellerx.orders.OrderItem;
 import com.ecommerce.sellerx.orders.TrendyolOrder;
@@ -102,6 +103,13 @@ public class TrendyolWebhookService {
                 .map(line -> convertWebhookLineToOrderItem(line, store.getId(), orderDate))
                 .collect(Collectors.toList());
         
+        // Use total price from webhook payload (Trendyol provides this)
+        java.math.BigDecimal totalPrice = payload.getTotalPrice() != null ? 
+                                          payload.getTotalPrice() : java.math.BigDecimal.ZERO;
+        
+        // Calculate stoppage (withholding tax) as totalPrice * stoppage rate
+        java.math.BigDecimal stoppage = totalPrice.multiply(FinancialConstants.STOPPAGE_RATE_DECIMAL);
+        
         return TrendyolOrder.builder()
                 .store(store)
                 .tyOrderNumber(payload.getOrderNumber())
@@ -110,6 +118,8 @@ public class TrendyolWebhookService {
                 .grossAmount(payload.getGrossAmount())
                 .totalDiscount(payload.getTotalDiscount())
                 .totalTyDiscount(payload.getTotalTyDiscount())
+                .totalPrice(totalPrice)
+                .stoppage(stoppage)
                 .orderItems(orderItems)
                 .shipmentPackageStatus(payload.getShipmentPackageStatus())
                 .status(payload.getStatus())

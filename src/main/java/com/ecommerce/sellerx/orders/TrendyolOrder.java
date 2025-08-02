@@ -63,6 +63,10 @@ public class TrendyolOrder {
     @Column(name = "total_price", precision = 19, scale = 2)
     private BigDecimal totalPrice;
     
+    @Column(name = "stoppage", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal stoppage = BigDecimal.ZERO;
+    
     @Column(name = "cargo_deci")
     @Builder.Default
     private Integer cargoDeci = 0;

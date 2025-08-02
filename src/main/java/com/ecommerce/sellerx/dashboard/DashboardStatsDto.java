@@ -34,6 +34,7 @@ public class DashboardStatsDto {
     // Profit stats
     private BigDecimal grossProfit; // Brüt Kar = ciro - ürün maliyetleri
     private BigDecimal vatDifference; // KDV Farkı
+    private BigDecimal totalStoppage; // Toplam Stopaj
     
     // Items without cost calculation
     private Integer itemsWithoutCost; // Maliyeti olmayan ürün sayısı

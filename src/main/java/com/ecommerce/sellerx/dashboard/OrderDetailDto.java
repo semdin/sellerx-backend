@@ -22,4 +22,5 @@ public class OrderDetailDto {
     private BigDecimal returnPrice;
     private BigDecimal revenue; // ciro
     private BigDecimal grossProfit; // brüt kar
+    private BigDecimal stoppage; // stopaj
 }

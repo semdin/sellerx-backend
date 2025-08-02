@@ -1,5 +1,6 @@
 package com.ecommerce.sellerx.orders;
 
+import com.ecommerce.sellerx.config.FinancialConstants;
 import com.ecommerce.sellerx.products.TrendyolProduct;
 import com.ecommerce.sellerx.products.TrendyolProductRepository;
 import com.ecommerce.sellerx.stores.Store;
@@ -291,13 +292,12 @@ public class TrendyolOrderService {
                 .map(line -> convertLineToOrderItem(line, store.getId(), orderDate, productCache))
                 .collect(Collectors.toList());
         
-        // Calculate total price from order items
-        BigDecimal totalPrice = orderItems.stream()
-                .map(item -> {
-                    BigDecimal itemPrice = item.getPrice() != null ? item.getPrice() : BigDecimal.ZERO;
-                    return itemPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Use total price from Trendyol API response
+        BigDecimal totalPrice = orderContent.getTotalPrice() != null ? 
+                                orderContent.getTotalPrice() : BigDecimal.ZERO;
+        
+        // Calculate stoppage (withholding tax) as totalPrice * stoppage rate
+        BigDecimal stoppage = totalPrice.multiply(FinancialConstants.STOPPAGE_RATE_DECIMAL);
         
         return TrendyolOrder.builder()
                 .store(store)
@@ -308,6 +308,7 @@ public class TrendyolOrderService {
                 .totalDiscount(orderContent.getTotalDiscount())
                 .totalTyDiscount(orderContent.getTotalTyDiscount())
                 .totalPrice(totalPrice)
+                .stoppage(stoppage)
                 .orderItems(orderItems)
                 .shipmentPackageStatus(orderContent.getShipmentPackageStatus())
                 .status(orderContent.getStatus())

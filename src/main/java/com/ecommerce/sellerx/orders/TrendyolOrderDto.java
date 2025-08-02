@@ -31,6 +31,12 @@ public record TrendyolOrderDto(
     @JsonProperty("totalTyDiscount")
     BigDecimal totalTyDiscount,
     
+    @JsonProperty("totalPrice")
+    BigDecimal totalPrice,
+    
+    @JsonProperty("stoppage")
+    BigDecimal stoppage,
+    
     @JsonProperty("orderItems")
     List<OrderItem> orderItems,
     

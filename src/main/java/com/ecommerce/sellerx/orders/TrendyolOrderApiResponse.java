@@ -45,6 +45,9 @@ public class TrendyolOrderApiResponse {
         @JsonProperty("totalTyDiscount")
         private BigDecimal totalTyDiscount;
         
+        @JsonProperty("totalPrice")
+        private BigDecimal totalPrice;
+        
         @JsonProperty("lines")
         private List<TrendyolOrderLine> lines;
         
