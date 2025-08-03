@@ -594,6 +594,51 @@
       ]
     },
     {
+      "name": "🏷️ Category Management",
+      "description": "Trendyol category management endpoints for retrieving and bulk inserting product categories",
+      "item": [
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/categories",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "categories"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Insert Categories",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"result\": [\n    {\n      \"category_id\": 3883,\n      \"category_name\": \"elmas bileklik\",\n      \"parent_category\": \"mücevher\",\n      \"commission_rate\": \"22.50\",\n      \"average_shipment_size\": \"0.30\"\n    },\n    {\n      \"category_id\": 1246,\n      \"category_name\": \"altın kolye\",\n      \"parent_category\": \"mücevher\",\n      \"commission_rate\": \"22.50\",\n      \"average_shipment_size\": \"0.20\"\n    },\n    {\n      \"category_id\": 1248,\n      \"category_name\": \"pırlanta kolye\",\n      \"parent_category\": \"mücevher\",\n      \"commission_rate\": \"22.50\",\n      \"average_shipment_size\": \"0.30\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/categories/bulk-insert",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "categories", "bulk-insert"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "📦 Order Management",
       "description": "Trendyol order synchronization and management endpoints for tracking sales and order analytics",
       "item": [
