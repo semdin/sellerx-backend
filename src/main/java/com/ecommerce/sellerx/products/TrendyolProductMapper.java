@@ -24,6 +24,7 @@ public class TrendyolProductMapper {
                 .hasActiveCampaign(product.getHasActiveCampaign())
                 .brand(product.getBrand())
                 .brandId(product.getBrandId())
+                .pimCategoryId(product.getPimCategoryId())
                 .productMainId(product.getProductMainId())
                 .image(product.getImage())
                 .productUrl(product.getProductUrl())

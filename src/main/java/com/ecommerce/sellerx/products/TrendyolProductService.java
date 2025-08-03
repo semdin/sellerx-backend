@@ -193,6 +193,10 @@ public class TrendyolProductService {
             log.debug("Product {} changed: brandId '{}' -> '{}'", productId, existingProduct.getBrandId(), apiProduct.getBrandId());
             return true;
         }
+        if (!Objects.equals(existingProduct.getPimCategoryId(), apiProduct.getPimCategoryId())) {
+            log.debug("Product {} changed: pimCategoryId '{}' -> '{}'", productId, existingProduct.getPimCategoryId(), apiProduct.getPimCategoryId());
+            return true;
+        }
         if (!Objects.equals(existingProduct.getProductMainId(), apiProduct.getProductMainId())) {
             log.debug("Product {} changed: productMainId '{}' -> '{}'", productId, existingProduct.getProductMainId(), apiProduct.getProductMainId());
             return true;
@@ -269,6 +273,7 @@ public class TrendyolProductService {
         product.setHasActiveCampaign(apiProduct.getHasActiveCampaign() != null ? apiProduct.getHasActiveCampaign() : false);
         product.setBrand(apiProduct.getBrand());
         product.setBrandId(apiProduct.getBrandId());
+        product.setPimCategoryId(apiProduct.getPimCategoryId());
         product.setProductMainId(apiProduct.getProductMainId());
         product.setProductUrl(apiProduct.getProductUrl());
         product.setDimensionalWeight(apiProduct.getDimensionalWeight());

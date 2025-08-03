@@ -54,6 +54,9 @@ public class TrendyolProduct {
     @Column(name = "brand_id")
     private Long brandId;
     
+    @Column(name = "pim_category_id")
+    private Long pimCategoryId;
+    
     @Column(name = "product_main_id")
     private String productMainId;
     
