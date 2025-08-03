@@ -33,6 +33,8 @@ public class TrendyolProductDto {
     private BigDecimal salePrice;
     private Integer vatRate;
     private Integer trendyolQuantity;
+    private BigDecimal commissionRate;
+    private BigDecimal shippingVolumeWeight;
     private Boolean approved;
     private Boolean archived;
     private Boolean blacklisted;

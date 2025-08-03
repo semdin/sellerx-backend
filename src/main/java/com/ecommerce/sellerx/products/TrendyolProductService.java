@@ -6,6 +6,8 @@ import com.ecommerce.sellerx.stores.StoreRepository;
 import com.ecommerce.sellerx.stores.StoreNotFoundException;
 import com.ecommerce.sellerx.stores.TrendyolCredentials;
 import com.ecommerce.sellerx.stores.MarketplaceCredentials;
+import com.ecommerce.sellerx.categories.TrendyolCategoryRepository;
+import com.ecommerce.sellerx.categories.TrendyolCategory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,6 +38,7 @@ public class TrendyolProductService {
     private final TrendyolProductMapper productMapper;
     private final RestTemplate restTemplate;
     private final StockOrderSynchronizationService stockOrderSyncService;
+    private final TrendyolCategoryRepository trendyolCategoryRepository;
     
     /**
      * Helper method to compare BigDecimal values properly
@@ -223,6 +226,21 @@ public class TrendyolProductService {
             return true;
         }
         
+        // Check category-related information
+        if (apiProduct.getPimCategoryId() != null) {
+            TrendyolCategory category = trendyolCategoryRepository.findByCategoryId(apiProduct.getPimCategoryId()).orElse(null);
+            if (category != null) {
+                if (isBigDecimalChanged(existingProduct.getCommissionRate(), category.getCommissionRate())) {
+                    log.debug("Product {} changed: commissionRate '{}' -> '{}'", productId, existingProduct.getCommissionRate(), category.getCommissionRate());
+                    return true;
+                }
+                if (isBigDecimalChanged(existingProduct.getShippingVolumeWeight(), category.getAverageShipmentSize())) {
+                    log.debug("Product {} changed: shippingVolumeWeight '{}' -> '{}'", productId, existingProduct.getShippingVolumeWeight(), category.getAverageShipmentSize());
+                    return true;
+                }
+            }
+        }
+        
         // Check status fields
         if (!Objects.equals(existingProduct.getApproved(), 
                 apiProduct.getApproved() != null ? apiProduct.getApproved() : false)) {
@@ -280,6 +298,15 @@ public class TrendyolProductService {
         product.setSalePrice(apiProduct.getSalePrice());
         product.setVatRate(apiProduct.getVatRate());
         product.setTrendyolQuantity(apiProduct.getQuantity() != null ? apiProduct.getQuantity() : 0);
+        
+        // Set category-related information
+        if (apiProduct.getPimCategoryId() != null) {
+            trendyolCategoryRepository.findByCategoryId(apiProduct.getPimCategoryId())
+                .ifPresent(category -> {
+                    product.setCommissionRate(category.getCommissionRate());
+                    product.setShippingVolumeWeight(category.getAverageShipmentSize());
+                });
+        }
         
         // Set status fields
         product.setApproved(apiProduct.getApproved() != null ? apiProduct.getApproved() : false);

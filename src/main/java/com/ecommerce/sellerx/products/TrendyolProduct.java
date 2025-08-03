@@ -79,6 +79,12 @@ public class TrendyolProduct {
     @Builder.Default
     private Integer trendyolQuantity = 0;
     
+    @Column(name = "commission_rate", precision = 5, scale = 2)
+    private BigDecimal commissionRate;
+    
+    @Column(name = "shipping_volume_weight", precision = 5, scale = 2)
+    private BigDecimal shippingVolumeWeight;
+    
     @Column(name = "approved")
     @Builder.Default
     private Boolean approved = false;

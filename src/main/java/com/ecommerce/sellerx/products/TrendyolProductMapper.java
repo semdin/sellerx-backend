@@ -32,6 +32,8 @@ public class TrendyolProductMapper {
                 .salePrice(product.getSalePrice())
                 .vatRate(product.getVatRate())
                 .trendyolQuantity(product.getTrendyolQuantity())
+                .commissionRate(product.getCommissionRate())
+                .shippingVolumeWeight(product.getShippingVolumeWeight())
                 .approved(product.getApproved())
                 .archived(product.getArchived())
                 .blacklisted(product.getBlacklisted())
