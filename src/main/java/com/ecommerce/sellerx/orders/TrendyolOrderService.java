@@ -292,6 +292,16 @@ public class TrendyolOrderService {
                 .map(line -> convertLineToOrderItem(line, store.getId(), orderDate, productCache))
                 .collect(Collectors.toList());
         
+        // Calculate total estimated commission
+        BigDecimal totalEstimatedCommission = orderItems.stream()
+                .filter(item -> item.getUnitEstimatedCommission() != null)
+                .map(item -> {
+                    BigDecimal unitCommission = item.getUnitEstimatedCommission();
+                    int quantity = item.getQuantity() != null ? item.getQuantity() : 1;
+                    return unitCommission.multiply(BigDecimal.valueOf(quantity));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
         // Use total price from Trendyol API response
         BigDecimal totalPrice = orderContent.getTotalPrice() != null ? 
                                 orderContent.getTotalPrice() : BigDecimal.ZERO;
@@ -309,15 +319,12 @@ public class TrendyolOrderService {
                 .totalTyDiscount(orderContent.getTotalTyDiscount())
                 .totalPrice(totalPrice)
                 .stoppage(stoppage)
+                .estimatedCommission(totalEstimatedCommission)
                 .orderItems(orderItems)
                 .shipmentPackageStatus(orderContent.getShipmentPackageStatus())
                 .status(orderContent.getStatus())
                 .cargoDeci(orderContent.getCargoDeci())
                 .build();
-    }
-    
-    private OrderItem convertLineToOrderItem(TrendyolOrderApiResponse.TrendyolOrderLine line, UUID storeId, LocalDateTime orderDate) {
-        return convertLineToOrderItem(line, storeId, orderDate, null);
     }
     
     private OrderItem convertLineToOrderItem(TrendyolOrderApiResponse.TrendyolOrderLine line, UUID storeId, LocalDateTime orderDate, Map<String, TrendyolProduct> productCache) {
@@ -331,8 +338,23 @@ public class TrendyolOrderService {
                 .vatBaseAmount(line.getVatBaseAmount())
                 .price(line.getPrice());
         
-        // Use the cost calculator to set cost information
+        // Use the cost calculator to set cost and commission information
         costCalculator.setCostInfo(itemBuilder, line.getBarcode(), storeId, orderDate, productCache);
+        
+        // Calculate unit estimated commission
+        BigDecimal commissionRate = null;
+        if (productCache != null && line.getBarcode() != null) {
+            TrendyolProduct product = productCache.get(line.getBarcode());
+            if (product != null && product.getCommissionRate() != null) {
+                commissionRate = product.getCommissionRate();
+            }
+        }
+        
+        if (commissionRate != null) {
+            BigDecimal unitEstimatedCommission = costCalculator.calculateUnitEstimatedCommission(
+                line.getAmount(), line.getDiscount(), commissionRate);
+            itemBuilder.unitEstimatedCommission(unitEstimatedCommission);
+        }
         
         return itemBuilder.build();
     }

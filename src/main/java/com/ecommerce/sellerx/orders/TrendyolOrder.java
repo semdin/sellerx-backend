@@ -67,6 +67,10 @@ public class TrendyolOrder {
     @Builder.Default
     private BigDecimal stoppage = BigDecimal.ZERO;
     
+    @Column(name = "estimated_commission", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal estimatedCommission = BigDecimal.ZERO;
+    
     @Column(name = "cargo_deci")
     @Builder.Default
     private Integer cargoDeci = 0;

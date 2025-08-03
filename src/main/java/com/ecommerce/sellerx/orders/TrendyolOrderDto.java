@@ -37,6 +37,9 @@ public record TrendyolOrderDto(
     @JsonProperty("stoppage")
     BigDecimal stoppage,
     
+    @JsonProperty("estimatedCommission")
+    BigDecimal estimatedCommission,
+    
     @JsonProperty("orderItems")
     List<OrderItem> orderItems,
     

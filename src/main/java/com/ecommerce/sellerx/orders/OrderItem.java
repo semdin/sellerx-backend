@@ -45,4 +45,14 @@ public class OrderItem {
     
     @JsonProperty("stockDate")
     private LocalDate stockDate; // Which stock date this order item was sourced from
+    
+    // Commission fields from trendyol_products
+    @JsonProperty("commissionRate")
+    private BigDecimal commissionRate; // Commission rate percentage from product
+    
+    @JsonProperty("shippingVolumeWeight")
+    private BigDecimal shippingVolumeWeight; // Shipping volume weight from product
+    
+    @JsonProperty("unitEstimatedCommission")
+    private BigDecimal unitEstimatedCommission; // Calculated as (unitPriceOrder - unitPriceDiscount) * commissionRate / 100
 }

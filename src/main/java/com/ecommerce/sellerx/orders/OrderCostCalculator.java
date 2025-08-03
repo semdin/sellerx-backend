@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -58,9 +59,42 @@ public class OrderCostCalculator {
                 log.debug("No available stock found for product {} on order date {}", 
                         barcode, orderDate);
             }
+            
+            // Set commission information from product
+            setCommissionInfo(itemBuilder, product);
         } else {
             log.debug("Product not found in trendyol_products for barcode: {}", barcode);
         }
+    }
+    
+    /**
+     * Set commission information for an OrderItem builder
+     */
+    public void setCommissionInfo(OrderItem.OrderItemBuilder itemBuilder, TrendyolProduct product) {
+        if (product.getCommissionRate() != null) {
+            itemBuilder.commissionRate(product.getCommissionRate());
+        }
+        
+        if (product.getShippingVolumeWeight() != null) {
+            itemBuilder.shippingVolumeWeight(product.getShippingVolumeWeight());
+        }
+    }
+    
+    /**
+     * Calculate unit estimated commission for an OrderItem
+     * Formula: (unitPriceOrder - unitPriceDiscount) * commissionRate / 100
+     */
+    public BigDecimal calculateUnitEstimatedCommission(BigDecimal unitPriceOrder, 
+                                                      BigDecimal unitPriceDiscount, 
+                                                      BigDecimal commissionRate) {
+        if (unitPriceOrder == null || commissionRate == null) {
+            return BigDecimal.ZERO;
+        }
+        
+        BigDecimal discount = unitPriceDiscount != null ? unitPriceDiscount : BigDecimal.ZERO;
+        BigDecimal netAmount = unitPriceOrder.subtract(discount);
+        
+        return netAmount.multiply(commissionRate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
     }
     
     /**
