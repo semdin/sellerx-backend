@@ -157,6 +157,13 @@ public class TrendyolOrderService {
                             continue;
                         }
                         
+                        // Skip UnPacked orders (these are original packages that will be split)
+                        if ("UnPacked".equals(orderContent.getStatus())) {
+                            log.debug("Skipping UnPacked order {}", orderContent.getId());
+                            skippedCount++;
+                            continue;
+                        }
+                        
                         // Convert order using product cache
                         TrendyolOrder order = convertApiResponseToEntity(orderContent, store, productCache);
                         ordersToSave.add(order);
@@ -275,10 +282,6 @@ public class TrendyolOrderService {
                 url, HttpMethod.GET, entity, TrendyolOrderApiResponse.class);
         
         return response.getBody();
-    }
-    
-    private TrendyolOrder convertApiResponseToEntity(TrendyolOrderApiResponse.TrendyolOrderContent orderContent, Store store) {
-        return convertApiResponseToEntity(orderContent, store, null);
     }
     
     private TrendyolOrder convertApiResponseToEntity(TrendyolOrderApiResponse.TrendyolOrderContent orderContent, Store store, Map<String, TrendyolProduct> productCache) {
