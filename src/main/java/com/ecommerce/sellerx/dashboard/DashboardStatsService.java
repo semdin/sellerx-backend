@@ -101,6 +101,9 @@ public class DashboardStatsService {
         // Calculate total stoppage
         BigDecimal totalStoppage = calculateTotalStoppage(revenueOrders);
         
+        // Calculate total estimated commission
+        BigDecimal totalEstimatedCommission = calculateTotalEstimatedCommission(revenueOrders);
+        
         // Calculate period expenses
         List<PeriodExpenseDto> expenses = calculatePeriodExpenses(storeId, startDate, endDate);
         
@@ -121,6 +124,7 @@ public class DashboardStatsService {
                 .grossProfit(grossProfit)
                 .vatDifference(vatDifference)
                 .totalStoppage(totalStoppage)
+                .totalEstimatedCommission(totalEstimatedCommission)
                 .itemsWithoutCost(itemsWithoutCost)
                 .totalExpenseNumber(totalExpenseNumber)
                 .totalExpenseAmount(totalExpenseAmount)
@@ -282,6 +286,9 @@ public class DashboardStatsService {
                     // Stoppage amount
                     BigDecimal stoppage = order.getStoppage() != null ? order.getStoppage() : BigDecimal.ZERO;
                     
+                    // Estimated commission
+                    BigDecimal estimatedCommission = order.getEstimatedCommission() != null ? order.getEstimatedCommission() : BigDecimal.ZERO;
+                    
                     return OrderDetailDto.builder()
                             .orderNumber(order.getTyOrderNumber())
                             .orderDate(order.getOrderDate())
@@ -291,6 +298,7 @@ public class DashboardStatsService {
                             .revenue(orderRevenue)
                             .grossProfit(orderGrossProfit)
                             .stoppage(stoppage)
+                            .estimatedCommission(estimatedCommission)
                             .build();
                 })
                 .toList();
@@ -311,7 +319,8 @@ public class DashboardStatsService {
                                 .totalSoldQuantity(0)
                                 .returnQuantity(0)
                                 .revenue(BigDecimal.ZERO)
-                                .grossProfit(BigDecimal.ZERO));
+                                .grossProfit(BigDecimal.ZERO)
+                                .estimatedCommission(BigDecimal.ZERO));
                 
                 // Mevcut bilgileri al
                 ProductDetailDto current = builder.build();
@@ -332,6 +341,13 @@ public class DashboardStatsService {
                 BigDecimal itemGrossProfit = itemRevenue.subtract(itemCost);
                 BigDecimal newGrossProfit = current.getGrossProfit().add(itemGrossProfit);
                 
+                // Ürün için komisyon hesaplama
+                BigDecimal itemCommission = BigDecimal.ZERO;
+                if (item.getUnitEstimatedCommission() != null) {
+                    itemCommission = item.getUnitEstimatedCommission().multiply(BigDecimal.valueOf(item.getQuantity()));
+                }
+                BigDecimal newEstimatedCommission = current.getEstimatedCommission().add(itemCommission);
+                
                 // Builder'ı güncelle
                 productMap.put(barcode, ProductDetailDto.builder()
                         .productName(productName)
@@ -339,7 +355,8 @@ public class DashboardStatsService {
                         .totalSoldQuantity(newTotalSold)
                         .returnQuantity(current.getReturnQuantity()) // İade miktarı aynı kalır bu döngüde
                         .revenue(newRevenue)
-                        .grossProfit(newGrossProfit));
+                        .grossProfit(newGrossProfit)
+                        .estimatedCommission(newEstimatedCommission));
             }
         }
         
@@ -361,7 +378,8 @@ public class DashboardStatsService {
                             .totalSoldQuantity(current.getTotalSoldQuantity())
                             .returnQuantity(newReturnQuantity)
                             .revenue(current.getRevenue())
-                            .grossProfit(current.getGrossProfit()));
+                            .grossProfit(current.getGrossProfit())
+                            .estimatedCommission(current.getEstimatedCommission()));
                 }
             }
         }
@@ -502,5 +520,11 @@ public class DashboardStatsService {
         }
         
         return count;
+    }
+    
+    private BigDecimal calculateTotalEstimatedCommission(List<TrendyolOrder> orders) {
+        return orders.stream()
+                .map(order -> order.getEstimatedCommission() != null ? order.getEstimatedCommission() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

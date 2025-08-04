@@ -19,4 +19,5 @@ public class ProductDetailDto {
     private Integer returnQuantity; // iade adedi
     private BigDecimal revenue; // ciro
     private BigDecimal grossProfit; // brüt kar
+    private BigDecimal estimatedCommission; // tahmini komisyon
 }

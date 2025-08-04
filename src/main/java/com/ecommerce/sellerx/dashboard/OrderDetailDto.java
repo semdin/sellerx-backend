@@ -23,4 +23,5 @@ public class OrderDetailDto {
     private BigDecimal revenue; // ciro
     private BigDecimal grossProfit; // brüt kar
     private BigDecimal stoppage; // stopaj
+    private BigDecimal estimatedCommission; // tahmini komisyon
 }
