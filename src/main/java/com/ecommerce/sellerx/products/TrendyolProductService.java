@@ -1,10 +1,13 @@
 package com.ecommerce.sellerx.products;
 
+import com.ecommerce.sellerx.orders.StockOrderSynchronizationService;
 import com.ecommerce.sellerx.stores.Store;
 import com.ecommerce.sellerx.stores.StoreRepository;
 import com.ecommerce.sellerx.stores.StoreNotFoundException;
 import com.ecommerce.sellerx.stores.TrendyolCredentials;
 import com.ecommerce.sellerx.stores.MarketplaceCredentials;
+import com.ecommerce.sellerx.categories.TrendyolCategoryRepository;
+import com.ecommerce.sellerx.categories.TrendyolCategory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -34,6 +37,8 @@ public class TrendyolProductService {
     private final StoreRepository storeRepository;
     private final TrendyolProductMapper productMapper;
     private final RestTemplate restTemplate;
+    private final StockOrderSynchronizationService stockOrderSyncService;
+    private final TrendyolCategoryRepository trendyolCategoryRepository;
     
     /**
      * Helper method to compare BigDecimal values properly
@@ -191,6 +196,10 @@ public class TrendyolProductService {
             log.debug("Product {} changed: brandId '{}' -> '{}'", productId, existingProduct.getBrandId(), apiProduct.getBrandId());
             return true;
         }
+        if (!Objects.equals(existingProduct.getPimCategoryId(), apiProduct.getPimCategoryId())) {
+            log.debug("Product {} changed: pimCategoryId '{}' -> '{}'", productId, existingProduct.getPimCategoryId(), apiProduct.getPimCategoryId());
+            return true;
+        }
         if (!Objects.equals(existingProduct.getProductMainId(), apiProduct.getProductMainId())) {
             log.debug("Product {} changed: productMainId '{}' -> '{}'", productId, existingProduct.getProductMainId(), apiProduct.getProductMainId());
             return true;
@@ -215,6 +224,21 @@ public class TrendyolProductService {
                 apiProduct.getQuantity() != null ? apiProduct.getQuantity() : 0)) {
             log.debug("Product {} changed: trendyolQuantity '{}' -> '{}'", productId, existingProduct.getTrendyolQuantity(), apiProduct.getQuantity());
             return true;
+        }
+        
+        // Check category-related information
+        if (apiProduct.getPimCategoryId() != null) {
+            TrendyolCategory category = trendyolCategoryRepository.findByCategoryId(apiProduct.getPimCategoryId()).orElse(null);
+            if (category != null) {
+                if (isBigDecimalChanged(existingProduct.getCommissionRate(), category.getCommissionRate())) {
+                    log.debug("Product {} changed: commissionRate '{}' -> '{}'", productId, existingProduct.getCommissionRate(), category.getCommissionRate());
+                    return true;
+                }
+                if (isBigDecimalChanged(existingProduct.getShippingVolumeWeight(), category.getAverageShipmentSize())) {
+                    log.debug("Product {} changed: shippingVolumeWeight '{}' -> '{}'", productId, existingProduct.getShippingVolumeWeight(), category.getAverageShipmentSize());
+                    return true;
+                }
+            }
         }
         
         // Check status fields
@@ -267,12 +291,22 @@ public class TrendyolProductService {
         product.setHasActiveCampaign(apiProduct.getHasActiveCampaign() != null ? apiProduct.getHasActiveCampaign() : false);
         product.setBrand(apiProduct.getBrand());
         product.setBrandId(apiProduct.getBrandId());
+        product.setPimCategoryId(apiProduct.getPimCategoryId());
         product.setProductMainId(apiProduct.getProductMainId());
         product.setProductUrl(apiProduct.getProductUrl());
         product.setDimensionalWeight(apiProduct.getDimensionalWeight());
         product.setSalePrice(apiProduct.getSalePrice());
         product.setVatRate(apiProduct.getVatRate());
         product.setTrendyolQuantity(apiProduct.getQuantity() != null ? apiProduct.getQuantity() : 0);
+        
+        // Set category-related information
+        if (apiProduct.getPimCategoryId() != null) {
+            trendyolCategoryRepository.findByCategoryId(apiProduct.getPimCategoryId())
+                .ifPresent(category -> {
+                    product.setCommissionRate(category.getCommissionRate());
+                    product.setShippingVolumeWeight(category.getAverageShipmentSize());
+                });
+        }
         
         // Set status fields
         product.setApproved(apiProduct.getApproved() != null ? apiProduct.getApproved() : false);
@@ -394,6 +428,16 @@ public class TrendyolProductService {
         product.setCostAndStockInfo(costAndStockList);
         
         TrendyolProduct savedProduct = trendyolProductRepository.save(product);
+        
+        // Trigger stock-order synchronization after adding stock
+        try {
+            UUID storeId = savedProduct.getStore().getId();
+            log.info("Triggering stock-order synchronization after adding stock for product {} in store {}", productId, storeId);
+            stockOrderSyncService.synchronizeOrdersAfterStockChange(storeId, newInfo.getStockDate());
+        } catch (Exception e) {
+            log.warn("Failed to trigger stock-order synchronization after adding stock: {}", e.getMessage());
+        }
+        
         return productMapper.toDto(savedProduct);
     }
     
@@ -425,6 +469,16 @@ public class TrendyolProductService {
         product.setCostAndStockInfo(costAndStockList);
         
         TrendyolProduct savedProduct = trendyolProductRepository.save(product);
+        
+        // Trigger stock-order synchronization after updating stock
+        try {
+            UUID storeId = savedProduct.getStore().getId();
+            log.info("Triggering stock-order synchronization after updating stock for product {} in store {} on date {}", productId, storeId, stockDate);
+            stockOrderSyncService.synchronizeOrdersAfterStockChange(storeId, stockDate);
+        } catch (Exception e) {
+            log.warn("Failed to trigger stock-order synchronization after updating stock: {}", e.getMessage());
+        }
+        
         return productMapper.toDto(savedProduct);
     }
     
@@ -447,6 +501,16 @@ public class TrendyolProductService {
         product.setCostAndStockInfo(costAndStockList);
         
         TrendyolProduct savedProduct = trendyolProductRepository.save(product);
+        
+        // Trigger stock-order synchronization after deleting stock
+        try {
+            UUID storeId = savedProduct.getStore().getId();
+            log.info("Triggering stock-order synchronization after deleting stock for product {} in store {} on date {}", productId, storeId, stockDate);
+            stockOrderSyncService.synchronizeOrdersAfterStockChange(storeId, stockDate);
+        } catch (Exception e) {
+            log.warn("Failed to trigger stock-order synchronization after deleting stock: {}", e.getMessage());
+        }
+        
         return productMapper.toDto(savedProduct);
     }
     

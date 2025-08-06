@@ -13,6 +13,13 @@ spring:
     hibernate:
       ddl-auto: none
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -21,9 +28,22 @@ spring:
     accessTokenExpiration: 3600 # 1h - test
     refreshTokenExpiration: 604800 # 7d
 
+# Turkey timezone configuration
+timezone: Europe/Istanbul
+
+# Webhook configuration
+app:
+  webhook:
+    enabled: false # Default: disabled for development
+    base-url: ${WEBHOOK_BASE_URL:http://localhost:8080}
+    api-key: ${WEBHOOK_API_KEY:sellerx-webhook-key}
+
 logging:
   level:
-    com.ecommerce.sellerx.products: DEBUG
+    com.ecommerce.sellerx.products: INFO
+    com.ecommerce.sellerx.orders: INFO
+    org.hibernate.SQL: INFO
+    root: INFO
 #server:
 #  port: 8443
 #  ssl:

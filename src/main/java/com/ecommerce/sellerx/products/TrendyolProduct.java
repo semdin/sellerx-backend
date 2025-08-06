@@ -54,6 +54,9 @@ public class TrendyolProduct {
     @Column(name = "brand_id")
     private Long brandId;
     
+    @Column(name = "pim_category_id")
+    private Long pimCategoryId;
+    
     @Column(name = "product_main_id")
     private String productMainId;
     
@@ -75,6 +78,12 @@ public class TrendyolProduct {
     @Column(name = "trendyol_quantity")
     @Builder.Default
     private Integer trendyolQuantity = 0;
+    
+    @Column(name = "commission_rate", precision = 5, scale = 2)
+    private BigDecimal commissionRate;
+    
+    @Column(name = "shipping_volume_weight", precision = 5, scale = 2)
+    private BigDecimal shippingVolumeWeight;
     
     @Column(name = "approved")
     @Builder.Default
@@ -99,6 +108,8 @@ public class TrendyolProduct {
     @Type(JsonBinaryType.class)
     @Column(name = "cost_and_stock_info", columnDefinition = "jsonb")
     @Builder.Default
+    @com.fasterxml.jackson.annotation.JsonProperty("costAndStockInfo")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
     private List<CostAndStockInfo> costAndStockInfo = new ArrayList<>();
     
     @Column(name = "created_at")

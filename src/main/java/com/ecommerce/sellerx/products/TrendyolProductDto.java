@@ -25,6 +25,7 @@ public class TrendyolProductDto {
     private Boolean hasActiveCampaign;
     private String brand;
     private Long brandId;
+    private Long pimCategoryId;
     private String productMainId;
     private String image;
     private String productUrl;
@@ -32,6 +33,8 @@ public class TrendyolProductDto {
     private BigDecimal salePrice;
     private Integer vatRate;
     private Integer trendyolQuantity;
+    private BigDecimal commissionRate;
+    private BigDecimal shippingVolumeWeight;
     private Boolean approved;
     private Boolean archived;
     private Boolean blacklisted;
