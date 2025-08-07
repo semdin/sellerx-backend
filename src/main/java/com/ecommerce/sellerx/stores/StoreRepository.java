@@ -16,6 +16,10 @@ public interface StoreRepository extends JpaRepository<Store, UUID> {
     
     List<Store> findByMarketplace(String marketplace);
     
+    // Case-insensitive marketplace search
+    @Query("SELECT s FROM Store s WHERE LOWER(s.marketplace) = LOWER(:marketplace)")
+    List<Store> findByMarketplaceIgnoreCase(@Param("marketplace") String marketplace);
+    
     // Find store by seller ID (from JSONB credentials)
     @Query(value = "SELECT * FROM stores s WHERE s.credentials->>'sellerId' = :sellerId", nativeQuery = true)
     Optional<Store> findBySellerId(@Param("sellerId") String sellerId);
