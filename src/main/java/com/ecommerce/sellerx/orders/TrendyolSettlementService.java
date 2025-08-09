@@ -130,37 +130,73 @@ public class TrendyolSettlementService {
 
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        String url = TRENDYOL_BASE_URL + SETTLEMENT_ENDPOINT + 
-                    "?transactionType=Sale" +
-                    "&startDate=" + startTimestamp +
-                    "&endDate=" + endTimestamp +
-                    "&size=1000";
+        // Start with page 0 and fetch all pages
+        int currentPage = 0;
+        int totalPages = 1; // Start with 1, will be updated from first response
+        int totalProcessed = 0;
 
-        try {
-            ResponseEntity<TrendyolSettlementResponse> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                TrendyolSettlementResponse.class,
-                credentials.getSellerId()
-            );
+        while (currentPage < totalPages) {
+            String url = TRENDYOL_BASE_URL + SETTLEMENT_ENDPOINT + 
+                        "?transactionType=Sale" +
+                        "&startDate=" + startTimestamp +
+                        "&endDate=" + endTimestamp +
+                        "&page=" + currentPage +
+                        "&size=1000";
 
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                processSettlementResponse(store, response.getBody());
-            } else {
-                log.warn("Failed to fetch settlements for store: {} - Status: {}", 
-                    store.getId(), response.getStatusCode());
+            try {
+                log.info("Fetching settlements page {} of {} for store: {}", 
+                    currentPage + 1, totalPages, store.getId());
+                
+                ResponseEntity<TrendyolSettlementResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    TrendyolSettlementResponse.class,
+                    credentials.getSellerId()
+                );
+
+                if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                    TrendyolSettlementResponse settlementResponse = response.getBody();
+                    
+                    // Update totalPages from the first response
+                    if (currentPage == 0) {
+                        totalPages = settlementResponse.getTotalPages() != null ? 
+                                   settlementResponse.getTotalPages() : 1;
+                        log.info("Total {} settlement pages to process for store: {}, total elements: {}", 
+                            totalPages, store.getId(), settlementResponse.getTotalElements());
+                    }
+                    
+                    // Process this page's settlements
+                    if (settlementResponse.getContent() != null && !settlementResponse.getContent().isEmpty()) {
+                        processSettlementResponse(store, settlementResponse);
+                        totalProcessed += settlementResponse.getContent().size();
+                    }
+                } else {
+                    log.warn("Failed to fetch settlements page {} for store: {} - Status: {}", 
+                        currentPage, store.getId(), response.getStatusCode());
+                    break; // Stop processing if we get an error
+                }
+
+                currentPage++;
+                
+                // Add a small delay between pages to avoid rate limiting
+                if (currentPage < totalPages) {
+                    Thread.sleep(200);
+                }
+
+            } catch (Exception e) {
+                log.error("Error fetching settlements page {} for store: {}", currentPage, store.getId(), e);
+                break; // Stop processing if we get an error
             }
-
-        } catch (Exception e) {
-            log.error("Error fetching settlements for store: {}", store.getId(), e);
-            throw new RuntimeException("Failed to fetch settlements from Trendyol API", e);
         }
+        
+        log.info("Completed fetching settlements for store: {} - Processed {} settlements across {} pages", 
+            store.getId(), totalProcessed, currentPage);
     }
 
     private void processSettlementResponse(Store store, TrendyolSettlementResponse response) {
         if (response.getContent() == null || response.getContent().isEmpty()) {
-            log.info("No settlements found for store: {}", store.getId());
+            log.info("No settlements found in this page for store: {}", store.getId());
             return;
         }
 
@@ -172,21 +208,34 @@ public class TrendyolSettlementService {
             .collect(Collectors.groupingBy(item -> 
                 item.getOrderNumber() + "_" + item.getShipmentPackageId()));
 
+        log.info("Grouped settlements into {} unique orders for store: {}", 
+            settlementsByOrder.size(), store.getId());
+
+        int processedOrders = 0;
+        int foundOrders = 0;
+        
         for (Map.Entry<String, List<TrendyolSettlementItem>> entry : settlementsByOrder.entrySet()) {
             String[] parts = entry.getKey().split("_");
             String orderNumber = parts[0];
             Long packageId = Long.valueOf(parts[1]);
             
             try {
-                updateOrderWithSettlements(store, orderNumber, packageId, entry.getValue());
+                boolean orderFound = updateOrderWithSettlements(store, orderNumber, packageId, entry.getValue());
+                processedOrders++;
+                if (orderFound) {
+                    foundOrders++;
+                }
             } catch (Exception e) {
                 log.error("Failed to update order {} package {} with settlements", 
                     orderNumber, packageId, e);
             }
         }
+        
+        log.info("Settlement processing completed for store: {} - Processed: {}/{} orders, Found in system: {}", 
+            store.getId(), processedOrders, settlementsByOrder.size(), foundOrders);
     }
 
-    private void updateOrderWithSettlements(Store store, String orderNumber, Long packageId, 
+    private boolean updateOrderWithSettlements(Store store, String orderNumber, Long packageId, 
                                           List<TrendyolSettlementItem> settlementItems) {
         
         // Find the order by order number, package ID and store
@@ -194,9 +243,9 @@ public class TrendyolSettlementService {
             .findByTyOrderNumberAndPackageNoAndStore(orderNumber, packageId, store);
 
         if (orderOptional.isEmpty()) {
-            log.warn("Order not found for settlement update: orderNumber={}, packageId={}, store={}", 
+            log.debug("Order not found for settlement update: orderNumber={}, packageId={}, store={}", 
                 orderNumber, packageId, store.getId());
-            return;
+            return false;
         }
 
         TrendyolOrder order = orderOptional.get();
@@ -205,7 +254,7 @@ public class TrendyolSettlementService {
         if (orderItems == null || orderItems.isEmpty()) {
             log.warn("No order items found for order: orderNumber={}, packageId={}", 
                 orderNumber, packageId);
-            return;
+            return false;
         }
 
         // Group settlements by barcode to match with order items
@@ -213,6 +262,7 @@ public class TrendyolSettlementService {
             .collect(Collectors.groupingBy(TrendyolSettlementItem::getBarcode));
 
         boolean orderUpdated = false;
+        int itemsWithSettlements = 0;
         
         // Update each order item with its corresponding settlements
         for (OrderItem orderItem : orderItems) {
@@ -231,14 +281,22 @@ public class TrendyolSettlementService {
                 }
                 
                 // Avoid duplicates - check if settlement ID already exists
+                int newSettlementsAdded = 0;
                 for (OrderItemSettlement newSettlement : orderItemSettlements) {
                     boolean exists = orderItem.getTransactions().stream()
                         .anyMatch(existing -> existing.getId().equals(newSettlement.getId()));
                     
                     if (!exists) {
                         orderItem.getTransactions().add(newSettlement);
+                        newSettlementsAdded++;
                         orderUpdated = true;
                     }
+                }
+                
+                if (newSettlementsAdded > 0) {
+                    itemsWithSettlements++;
+                    log.debug("Added {} new settlements to product {} in order {}", 
+                        newSettlementsAdded, barcode, orderNumber);
                 }
             }
         }
@@ -253,11 +311,13 @@ public class TrendyolSettlementService {
 
             orderRepository.save(order);
             
-            log.info("Updated order {} package {} with settlements for {} products", 
-                orderNumber, packageId, settlementsByBarcode.size());
+            log.info("Updated order {} package {} with settlements for {}/{} products", 
+                orderNumber, packageId, itemsWithSettlements, orderItems.size());
         } else {
-            log.info("No new settlements to add for order {} package {}", orderNumber, packageId);
+            log.debug("No new settlements to add for order {} package {}", orderNumber, packageId);
         }
+        
+        return true; // Order was found
     }
     
     /**
