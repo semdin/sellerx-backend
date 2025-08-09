@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -46,13 +48,18 @@ public class OrderItem {
     @JsonProperty("stockDate")
     private LocalDate stockDate; // Which stock date this order item was sourced from
     
-    // Commission fields from trendyol_products
-    @JsonProperty("commissionRate")
-    private BigDecimal commissionRate; // Commission rate percentage from product
+    // ESTIMATED values from order data (these may not be the final values)
+    @JsonProperty("estimatedCommissionRate")
+    private BigDecimal estimatedCommissionRate; // Commission rate percentage from product (estimated)
     
-    @JsonProperty("shippingVolumeWeight")
-    private BigDecimal shippingVolumeWeight; // Shipping volume weight from product
+    @JsonProperty("estimatedShippingVolumeWeight")
+    private BigDecimal estimatedShippingVolumeWeight; // Shipping volume weight from product (estimated)
     
     @JsonProperty("unitEstimatedCommission")
     private BigDecimal unitEstimatedCommission; // Calculated as (unitPriceOrder - unitPriceDiscount) * commissionRate / 100
+    
+    // Settlement transactions for this specific product
+    @JsonProperty("transactions")
+    @Builder.Default
+    private List<OrderItemSettlement> transactions = new java.util.ArrayList<>();
 }

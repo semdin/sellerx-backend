@@ -345,18 +345,27 @@ public class TrendyolOrderService {
         costCalculator.setCostInfo(itemBuilder, line.getBarcode(), storeId, orderDate, productCache);
         
         // Calculate unit estimated commission
-        BigDecimal commissionRate = null;
+        BigDecimal estimatedCommissionRate = null;
         if (productCache != null && line.getBarcode() != null) {
             TrendyolProduct product = productCache.get(line.getBarcode());
             if (product != null && product.getCommissionRate() != null) {
-                commissionRate = product.getCommissionRate();
+                estimatedCommissionRate = product.getCommissionRate();
             }
         }
         
-        if (commissionRate != null) {
+        if (estimatedCommissionRate != null) {
             BigDecimal unitEstimatedCommission = costCalculator.calculateUnitEstimatedCommission(
-                line.getAmount(), line.getDiscount(), commissionRate);
-            itemBuilder.unitEstimatedCommission(unitEstimatedCommission);
+                line.getAmount(), line.getDiscount(), estimatedCommissionRate);
+            itemBuilder.unitEstimatedCommission(unitEstimatedCommission)
+                       .estimatedCommissionRate(estimatedCommissionRate);
+        }
+        
+        // Set estimated shipping volume weight from product if available
+        if (productCache != null && line.getBarcode() != null) {
+            TrendyolProduct product = productCache.get(line.getBarcode());
+            if (product != null && product.getShippingVolumeWeight() != null) {
+                itemBuilder.estimatedShippingVolumeWeight(product.getShippingVolumeWeight());
+            }
         }
         
         return itemBuilder.build();

@@ -802,6 +802,100 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "💰 Settlements",
+      "description": "Settlement management endpoints for syncing and retrieving settlement data from marketplaces",
+      "item": [
+        {
+          "name": "Sync Settlements (Current Store)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/settlements/sync",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "settlements", "sync"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sync Settlements for Specific Store",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/settlements/sync/{{store_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "settlements", "sync", "{{store_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sync Settlements for All Stores",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/settlements/sync-all",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "settlements", "sync-all"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Settlement Stats (Current Store)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/settlements/stats",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "settlements", "stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Settlement Stats for Specific Store",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/settlements/stats/{{store_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "settlements", "stats", "{{store_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "event": [

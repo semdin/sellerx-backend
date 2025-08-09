@@ -75,6 +75,13 @@ public class TrendyolOrder {
     @Builder.Default
     private Integer cargoDeci = 0;
     
+    @Column(name = "transaction_date")
+    private LocalDateTime transactionDate;
+    
+    @Column(name = "transaction_status")
+    @Builder.Default
+    private String transactionStatus = "NOT_SETTLED";
+    
     @Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

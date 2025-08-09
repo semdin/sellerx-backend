@@ -68,15 +68,15 @@ public class OrderCostCalculator {
     }
     
     /**
-     * Set commission information for an OrderItem builder
+     * Set commission information for an OrderItem builder (as estimated values)
      */
     public void setCommissionInfo(OrderItem.OrderItemBuilder itemBuilder, TrendyolProduct product) {
         if (product.getCommissionRate() != null) {
-            itemBuilder.commissionRate(product.getCommissionRate());
+            itemBuilder.estimatedCommissionRate(product.getCommissionRate());
         }
         
         if (product.getShippingVolumeWeight() != null) {
-            itemBuilder.shippingVolumeWeight(product.getShippingVolumeWeight());
+            itemBuilder.estimatedShippingVolumeWeight(product.getShippingVolumeWeight());
         }
     }
     

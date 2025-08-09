@@ -102,4 +102,15 @@ public interface TrendyolOrderRepository extends JpaRepository<TrendyolOrder, UU
     List<TrendyolOrder> findOrdersWithProductFromDate(@Param("storeId") UUID storeId, 
                                                       @Param("barcode") String barcode, 
                                                       @Param("fromDate") LocalDateTime fromDate);
+    
+    // Settlement related queries
+    
+    // Find order by order number, package ID and store (for settlement matching)
+    Optional<TrendyolOrder> findByTyOrderNumberAndPackageNoAndStore(String tyOrderNumber, Long packageNo, com.ecommerce.sellerx.stores.Store store);
+    
+    // Count orders by store
+    long countByStore(com.ecommerce.sellerx.stores.Store store);
+    
+    // Count orders by store and transaction status
+    long countByStoreAndTransactionStatus(com.ecommerce.sellerx.stores.Store store, String transactionStatus);
 }
