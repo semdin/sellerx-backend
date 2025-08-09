@@ -13,10 +13,14 @@ public class TrendyolSettlementMapper {
             return null;
         }
         
+        // Determine status based on transaction type
+        String status = determineStatus(apiItem.getTransactionType());
+        
         return OrderItemSettlement.builder()
                 .id(apiItem.getId())
                 .barcode(apiItem.getBarcode())
                 .transactionType(apiItem.getTransactionType())
+                .status(status)
                 .receiptId(apiItem.getReceiptId())
                 .debt(apiItem.getDebt())
                 .credit(apiItem.getCredit())
@@ -29,5 +33,20 @@ public class TrendyolSettlementMapper {
                 .country(apiItem.getCountry())
                 .shipmentPackageId(apiItem.getShipmentPackageId())
                 .build();
+    }
+    
+    /**
+     * Determine status based on transaction type
+     */
+    private String determineStatus(String transactionType) {
+        if ("Satış".equals(transactionType) || "Sale".equals(transactionType)) {
+            return "SOLD";
+        } else if ("İade".equals(transactionType) || "Return".equals(transactionType)) {
+            return "RETURNED";
+        } else if ("İptal".equals(transactionType) || "Cancel".equals(transactionType)) {
+            return "CANCELLED";
+        } else {
+            return "UNKNOWN";
+        }
     }
 }

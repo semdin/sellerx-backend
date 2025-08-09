@@ -20,6 +20,9 @@ public class OrderItemSettlement {
     @JsonProperty("transactionType")
     private String transactionType; // "Satış", "İade", etc.
     
+    @JsonProperty("status") 
+    private String status; // "SOLD", "RETURNED", "CANCELLED"
+    
     @JsonProperty("receiptId")
     private Long receiptId; // Receipt ID from settlement
     

@@ -113,4 +113,7 @@ public interface TrendyolOrderRepository extends JpaRepository<TrendyolOrder, UU
     
     // Count orders by store and transaction status
     long countByStoreAndTransactionStatus(com.ecommerce.sellerx.stores.Store store, String transactionStatus);
+    
+    // Find orders by store and transaction status
+    List<TrendyolOrder> findByStoreAndTransactionStatus(com.ecommerce.sellerx.stores.Store store, String transactionStatus);
 }
