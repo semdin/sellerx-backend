@@ -16,23 +16,6 @@ public class TrendyolSettlementMapper {
         // Determine status based on transaction type
         String status = determineStatus(apiItem.getTransactionType());
         
-        // For discount and coupon, use simplified mapping
-        if ("İndirim".equals(apiItem.getTransactionType()) || "Discount".equals(apiItem.getTransactionType()) ||
-            "Kupon".equals(apiItem.getTransactionType()) || "Coupon".equals(apiItem.getTransactionType())) {
-            
-            return OrderItemSettlement.builder()
-                    .id(apiItem.getId())
-                    .transactionType(apiItem.getTransactionType())
-                    .status(status)
-                    .debt(apiItem.getDebt())
-                    .credit(apiItem.getCredit())
-                    .commissionRate(apiItem.getCommissionRate())
-                    .commissionAmount(apiItem.getCommissionAmount())
-                    .sellerRevenue(apiItem.getSellerRevenue())
-                    .build();
-        }
-        
-        // For sales and returns, use full mapping
         return OrderItemSettlement.builder()
                 .id(apiItem.getId())
                 .barcode(apiItem.getBarcode())
