@@ -130,8 +130,8 @@ public class TrendyolSettlementService {
 
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        // Fetch both Sale and Return settlements
-        String[] transactionTypes = {"Sale", "Return"};
+        // Fetch all settlement types: Sale, Return, Discount, Coupon
+        String[] transactionTypes = {"Sale", "Return", "Discount", "Coupon"};
         
         for (String transactionType : transactionTypes) {
             log.info("Fetching {} settlements for store: {} from {} to {}", 
@@ -224,9 +224,11 @@ public class TrendyolSettlementService {
         log.info("Processing {} settlement items for store: {}", 
             response.getContent().size(), store.getId());
 
-        // Separate sale and return settlements for different processing logic
+        // Separate different types of settlements for different processing logic
         Map<String, List<TrendyolSettlementItem>> saleSettlements = new HashMap<>();
         Map<String, List<TrendyolSettlementItem>> returnSettlements = new HashMap<>();
+        Map<String, List<TrendyolSettlementItem>> discountSettlements = new HashMap<>();
+        Map<String, List<TrendyolSettlementItem>> couponSettlements = new HashMap<>();
         
         for (TrendyolSettlementItem item : response.getContent()) {
             String key = item.getOrderNumber() + "_" + item.getShipmentPackageId();
@@ -237,11 +239,18 @@ public class TrendyolSettlementService {
                 // For returns, we might need to search by order number only since package might be different
                 String returnKey = item.getOrderNumber();
                 returnSettlements.computeIfAbsent(returnKey, k -> new ArrayList<>()).add(item);
+            } else if ("İndirim".equals(item.getTransactionType()) || "Discount".equals(item.getTransactionType())) {
+                // For discounts, use package ID like sales
+                discountSettlements.computeIfAbsent(key, k -> new ArrayList<>()).add(item);
+            } else if ("Kupon".equals(item.getTransactionType()) || "Coupon".equals(item.getTransactionType())) {
+                // For coupons, use package ID like sales
+                couponSettlements.computeIfAbsent(key, k -> new ArrayList<>()).add(item);
             }
         }
 
-        log.info("Grouped settlements for store: {} - Sales: {}, Returns: {}", 
-            store.getId(), saleSettlements.size(), returnSettlements.size());
+        log.info("Grouped settlements for store: {} - Sales: {}, Returns: {}, Discounts: {}, Coupons: {}", 
+            store.getId(), saleSettlements.size(), returnSettlements.size(), 
+            discountSettlements.size(), couponSettlements.size());
 
         int processedOrders = 0;
         int foundOrders = 0;
@@ -276,6 +285,42 @@ public class TrendyolSettlementService {
                 }
             } catch (Exception e) {
                 log.error("Failed to update order {} with return settlements", orderNumber, e);
+            }
+        }
+        
+        // Process discount settlements (use package ID like sales)
+        for (Map.Entry<String, List<TrendyolSettlementItem>> entry : discountSettlements.entrySet()) {
+            String[] parts = entry.getKey().split("_");
+            String orderNumber = parts[0];
+            Long packageId = Long.valueOf(parts[1]);
+            
+            try {
+                boolean orderFound = updateOrderWithSettlements(store, orderNumber, packageId, entry.getValue());
+                processedOrders++;
+                if (orderFound) {
+                    foundOrders++;
+                }
+            } catch (Exception e) {
+                log.error("Failed to update order {} package {} with discount settlements", 
+                    orderNumber, packageId, e);
+            }
+        }
+        
+        // Process coupon settlements (use package ID like sales)
+        for (Map.Entry<String, List<TrendyolSettlementItem>> entry : couponSettlements.entrySet()) {
+            String[] parts = entry.getKey().split("_");
+            String orderNumber = parts[0];
+            Long packageId = Long.valueOf(parts[1]);
+            
+            try {
+                boolean orderFound = updateOrderWithSettlements(store, orderNumber, packageId, entry.getValue());
+                processedOrders++;
+                if (orderFound) {
+                    foundOrders++;
+                }
+            } catch (Exception e) {
+                log.error("Failed to update order {} package {} with coupon settlements", 
+                    orderNumber, packageId, e);
             }
         }
         
@@ -369,6 +414,8 @@ public class TrendyolSettlementService {
         // Separate settlements by type to handle them intelligently
         List<TrendyolSettlementItem> sales = new ArrayList<>();
         List<TrendyolSettlementItem> returns = new ArrayList<>();
+        List<TrendyolSettlementItem> discounts = new ArrayList<>();
+        List<TrendyolSettlementItem> coupons = new ArrayList<>();
         List<TrendyolSettlementItem> others = new ArrayList<>();
         
         for (TrendyolSettlementItem settlement : itemSettlements) {
@@ -377,6 +424,10 @@ public class TrendyolSettlementService {
                 sales.add(settlement);
             } else if ("İade".equals(transactionType) || "Return".equals(transactionType)) {
                 returns.add(settlement);
+            } else if ("İndirim".equals(transactionType) || "Discount".equals(transactionType)) {
+                discounts.add(settlement);
+            } else if ("Kupon".equals(transactionType) || "Coupon".equals(transactionType)) {
+                coupons.add(settlement);
             } else {
                 others.add(settlement);
             }
@@ -429,6 +480,38 @@ public class TrendyolSettlementService {
                         returnSettlementObj.getId(), orderItem.getBarcode(), orderNumber, packageId);
                 }
                 itemUpdated = true;
+            }
+        }
+        
+        // Handle discount settlements (they reduce revenue)
+        for (TrendyolSettlementItem discountSettlement : discounts) {
+            OrderItemSettlement settlement = settlementMapper.mapToOrderItemSettlement(discountSettlement);
+            
+            boolean exists = orderItem.getTransactions().stream()
+                .anyMatch(existing -> existing.getId().equals(settlement.getId()));
+                
+            if (!exists) {
+                settlement.setStatus("DISCOUNT");
+                orderItem.getTransactions().add(settlement);
+                itemUpdated = true;
+                log.debug("Added DISCOUNT settlement {} for product {} in order {} package {}", 
+                    settlement.getId(), orderItem.getBarcode(), orderNumber, packageId);
+            }
+        }
+        
+        // Handle coupon settlements (they also reduce revenue)
+        for (TrendyolSettlementItem couponSettlement : coupons) {
+            OrderItemSettlement settlement = settlementMapper.mapToOrderItemSettlement(couponSettlement);
+            
+            boolean exists = orderItem.getTransactions().stream()
+                .anyMatch(existing -> existing.getId().equals(settlement.getId()));
+                
+            if (!exists) {
+                settlement.setStatus("COUPON");
+                orderItem.getTransactions().add(settlement);
+                itemUpdated = true;
+                log.debug("Added COUPON settlement {} for product {} in order {} package {}", 
+                    settlement.getId(), orderItem.getBarcode(), orderNumber, packageId);
             }
         }
         
