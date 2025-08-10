@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.Base64;
@@ -387,6 +388,9 @@ public class TrendyolSettlementService {
                 order.setTransactionStatus("SETTLED");
             }
 
+            // Calculate transaction summaries for all order items
+            updateTransactionSummaries(order);
+
             orderRepository.save(order);
             
             log.info("Updated order {} package {} with settlements for {}/{} products", 
@@ -623,6 +627,10 @@ public class TrendyolSettlementService {
                 if (order.getTransactionStatus() == null || "NOT_SETTLED".equals(order.getTransactionStatus())) {
                     order.setTransactionStatus("SETTLED");
                 }
+                
+                // Calculate transaction summaries for all order items
+                updateTransactionSummaries(order);
+                
                 orderRepository.save(order);
             }
             
@@ -710,5 +718,178 @@ public class TrendyolSettlementService {
         transactionStats.put("netRevenue", totalSaleRevenue - totalReturnAmount);
         
         return transactionStats;
+    }
+    
+    /**
+     * Calculate transaction summary for an order item
+     */
+    private OrderItemTransactionSummary calculateTransactionSummary(OrderItem orderItem) {
+        if (orderItem.getTransactions() == null || orderItem.getTransactions().isEmpty()) {
+            return OrderItemTransactionSummary.builder()
+                    .totalPrice(BigDecimal.ZERO)
+                    .totalDiscount(BigDecimal.ZERO)
+                    .totalCoupon(BigDecimal.ZERO)
+                    .totalCommission(BigDecimal.ZERO)
+                    .finalPrice(BigDecimal.ZERO)
+                    .netAmount(BigDecimal.ZERO)
+                    .soldQuantity(0)
+                    .returnedQuantity(0)
+                    .build();
+        }
+        
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        BigDecimal totalDiscount = BigDecimal.ZERO;
+        BigDecimal totalCoupon = BigDecimal.ZERO;
+        BigDecimal totalSoldCommission = BigDecimal.ZERO;
+        BigDecimal totalDiscountCommission = BigDecimal.ZERO;
+        BigDecimal totalCouponCommission = BigDecimal.ZERO;
+        
+        int soldQuantity = 0;
+        int returnedQuantity = 0;
+        
+        // First pass: count sold and returned quantities
+        for (OrderItemSettlement transaction : orderItem.getTransactions()) {
+            String status = transaction.getStatus();
+            if ("SOLD".equals(status)) {
+                soldQuantity++;
+            } else if ("RETURNED".equals(status)) {
+                returnedQuantity++;
+            }
+        }
+        
+        // Second pass: calculate financial values based on sold quantity
+        int discountCount = 0;
+        int couponCount = 0;
+        
+        for (OrderItemSettlement transaction : orderItem.getTransactions()) {
+            String status = transaction.getStatus();
+            BigDecimal credit = transaction.getCredit() != null ? transaction.getCredit() : BigDecimal.ZERO;
+            BigDecimal debt = transaction.getDebt() != null ? transaction.getDebt() : BigDecimal.ZERO;
+            BigDecimal commissionAmount = transaction.getCommissionAmount() != null ? transaction.getCommissionAmount() : BigDecimal.ZERO;
+            
+            switch (status) {
+                case "SOLD":
+                    totalPrice = totalPrice.add(credit);
+                    totalSoldCommission = totalSoldCommission.add(commissionAmount);
+                    break;
+                case "RETURNED":
+                    // Don't count returned items in financial calculations
+                    break;
+                case "DISCOUNT":
+                    // Count discounts up to sold quantity (not net active quantity)
+                    // This ensures that if we sold 1 and returned 1, we still count 1 discount
+                    if (discountCount < soldQuantity) {
+                        totalDiscount = totalDiscount.add(debt);
+                        totalDiscountCommission = totalDiscountCommission.add(commissionAmount);
+                        discountCount++;
+                    }
+                    break;
+                case "COUPON":
+                    // Count coupons up to sold quantity (not net active quantity)
+                    // This ensures that if we sold 1 and returned 1, we still count 1 coupon
+                    if (couponCount < soldQuantity) {
+                        totalCoupon = totalCoupon.add(debt);
+                        totalCouponCommission = totalCouponCommission.add(commissionAmount);
+                        couponCount++;
+                    }
+                    break;
+            }
+        }
+        
+        // Calculate net values
+        BigDecimal finalPrice = totalPrice.subtract(totalDiscount).subtract(totalCoupon);
+        BigDecimal totalCommission = totalSoldCommission.subtract(totalDiscountCommission).subtract(totalCouponCommission);
+        BigDecimal netAmount = finalPrice.subtract(totalCommission);
+        
+        return OrderItemTransactionSummary.builder()
+                .totalPrice(totalPrice)
+                .totalDiscount(totalDiscount)
+                .totalCoupon(totalCoupon)
+                .totalCommission(totalCommission)
+                .finalPrice(finalPrice)
+                .netAmount(netAmount)
+                .soldQuantity(soldQuantity)
+                .returnedQuantity(returnedQuantity)
+                .build();
+    }
+    
+    /**
+     * Update transaction summaries for all order items
+     */
+    private void updateTransactionSummaries(TrendyolOrder order) {
+        if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
+            return;
+        }
+        
+        // Calculate individual order item summaries
+        for (OrderItem orderItem : order.getOrderItems()) {
+            OrderItemTransactionSummary summary = calculateTransactionSummary(orderItem);
+            orderItem.setTransactionSummary(summary);
+        }
+        
+        // Calculate order-level transaction summary
+        OrderTransactionSummary orderSummary = calculateOrderTransactionSummary(order);
+        order.setOrderTransactionSummary(orderSummary);
+        
+        log.debug("Updated transaction summaries for {} order items in order {}", 
+            order.getOrderItems().size(), order.getTyOrderNumber());
+    }
+    
+    /**
+     * Calculate order-level transaction summary by aggregating all order items
+     */
+    private OrderTransactionSummary calculateOrderTransactionSummary(TrendyolOrder order) {
+        if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
+            return OrderTransactionSummary.builder()
+                    .totalPrice(BigDecimal.ZERO)
+                    .totalDiscount(BigDecimal.ZERO)
+                    .totalCoupon(BigDecimal.ZERO)
+                    .totalCommission(BigDecimal.ZERO)
+                    .finalPrice(BigDecimal.ZERO)
+                    .netAmount(BigDecimal.ZERO)
+                    .totalSoldQuantity(0)
+                    .totalReturnedQuantity(0)
+                    .uniqueProductCount(0)
+                    .build();
+        }
+        
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        BigDecimal totalDiscount = BigDecimal.ZERO;
+        BigDecimal totalCoupon = BigDecimal.ZERO;
+        BigDecimal totalCommission = BigDecimal.ZERO;
+        BigDecimal finalPrice = BigDecimal.ZERO;
+        BigDecimal netAmount = BigDecimal.ZERO;
+        
+        int totalSoldQuantity = 0;
+        int totalReturnedQuantity = 0;
+        int uniqueProductCount = order.getOrderItems().size();
+        
+        // Aggregate data from all order items
+        for (OrderItem orderItem : order.getOrderItems()) {
+            OrderItemTransactionSummary itemSummary = orderItem.getTransactionSummary();
+            if (itemSummary != null) {
+                totalPrice = totalPrice.add(itemSummary.getTotalPrice() != null ? itemSummary.getTotalPrice() : BigDecimal.ZERO);
+                totalDiscount = totalDiscount.add(itemSummary.getTotalDiscount() != null ? itemSummary.getTotalDiscount() : BigDecimal.ZERO);
+                totalCoupon = totalCoupon.add(itemSummary.getTotalCoupon() != null ? itemSummary.getTotalCoupon() : BigDecimal.ZERO);
+                totalCommission = totalCommission.add(itemSummary.getTotalCommission() != null ? itemSummary.getTotalCommission() : BigDecimal.ZERO);
+                finalPrice = finalPrice.add(itemSummary.getFinalPrice() != null ? itemSummary.getFinalPrice() : BigDecimal.ZERO);
+                netAmount = netAmount.add(itemSummary.getNetAmount() != null ? itemSummary.getNetAmount() : BigDecimal.ZERO);
+                
+                totalSoldQuantity += itemSummary.getSoldQuantity() != null ? itemSummary.getSoldQuantity() : 0;
+                totalReturnedQuantity += itemSummary.getReturnedQuantity() != null ? itemSummary.getReturnedQuantity() : 0;
+            }
+        }
+        
+        return OrderTransactionSummary.builder()
+                .totalPrice(totalPrice)
+                .totalDiscount(totalDiscount)
+                .totalCoupon(totalCoupon)
+                .totalCommission(totalCommission)
+                .finalPrice(finalPrice)
+                .netAmount(netAmount)
+                .totalSoldQuantity(totalSoldQuantity)
+                .totalReturnedQuantity(totalReturnedQuantity)
+                .uniqueProductCount(uniqueProductCount)
+                .build();
     }
 }

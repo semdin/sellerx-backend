@@ -62,4 +62,8 @@ public class OrderItem {
     @JsonProperty("transactions")
     @Builder.Default
     private List<OrderItemSettlement> transactions = new java.util.ArrayList<>();
+    
+    // Financial summary of all transactions
+    @JsonProperty("transactionSummary")
+    private OrderItemTransactionSummary transactionSummary;
 }

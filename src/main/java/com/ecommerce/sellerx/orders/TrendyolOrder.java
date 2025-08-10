@@ -1,6 +1,7 @@
 package com.ecommerce.sellerx.orders;
 
 import com.ecommerce.sellerx.stores.Store;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,6 +20,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonPropertyOrder({"tyOrderNumber", "packageNo", "orderDate", "orderTransactionSummary", "orderItems"})
 public class TrendyolOrder {
     
     @Id
@@ -89,6 +91,10 @@ public class TrendyolOrder {
     @Column(name = "updated_at")
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
+    
+    // Financial summary of all order items (calculated field, not stored in DB)
+    @Transient
+    private OrderTransactionSummary orderTransactionSummary;
     
     @PreUpdate
     public void preUpdate() {
