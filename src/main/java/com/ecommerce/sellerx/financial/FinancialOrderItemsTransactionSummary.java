@@ -1,4 +1,4 @@
-package com.ecommerce.sellerx.orders;
+package com.ecommerce.sellerx.financial;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderItemTransactionSummary {
+public class FinancialOrderItemsTransactionSummary {
     
     /**
      * Total gross price (sum of all SOLD credits, excluding returns)

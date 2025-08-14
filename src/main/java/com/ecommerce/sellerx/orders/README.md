@@ -112,7 +112,7 @@ curl "http://localhost:8080/api/orders/stores/123e4567-e89b-12d3-a456-4266141740
 ### TrendyolOrder Entity
 
 ```sql
-CREATE TABLE trendyol_orders (
+CREATE TABLE IF NOT EXISTStrendyol_orders (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     store_id UUID NOT NULL,
     ty_order_number VARCHAR(255) NOT NULL,

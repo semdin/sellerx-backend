@@ -1,14 +1,14 @@
-package com.ecommerce.sellerx.orders;
+package com.ecommerce.sellerx.financial;
 
 import org.springframework.stereotype.Component;
 
 @Component
-public class TrendyolSettlementMapper {
+public class TrendyolFinancialSettlementMapper {
     
     /**
      * Maps Trendyol API settlement item to our internal OrderItemSettlement DTO
      */
-    public OrderItemSettlement mapToOrderItemSettlement(TrendyolSettlementItem apiItem) {
+    public FinancialSettlement mapToOrderItemSettlement(TrendyolFinancialSettlementItem apiItem) {
         if (apiItem == null) {
             return null;
         }
@@ -16,7 +16,7 @@ public class TrendyolSettlementMapper {
         // Determine status based on transaction type
         String status = determineStatus(apiItem.getTransactionType());
         
-        return OrderItemSettlement.builder()
+        return FinancialSettlement.builder()
                 .id(apiItem.getId())
                 .barcode(apiItem.getBarcode())
                 .transactionType(apiItem.getTransactionType())

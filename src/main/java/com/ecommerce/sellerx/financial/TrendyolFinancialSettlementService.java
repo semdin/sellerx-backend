@@ -1,5 +1,6 @@
-package com.ecommerce.sellerx.orders;
+package com.ecommerce.sellerx.financial;
 
+import com.ecommerce.sellerx.orders.TrendyolOrderRepository;
 import com.ecommerce.sellerx.stores.MarketplaceCredentials;
 import com.ecommerce.sellerx.stores.Store;
 import com.ecommerce.sellerx.stores.StoreRepository;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import com.ecommerce.sellerx.orders.*;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -21,14 +23,14 @@ import java.util.Base64;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class TrendyolSettlementService {
+public class TrendyolFinancialSettlementService {
 
     private static final String TRENDYOL_BASE_URL = "https://apigw.trendyol.com";
     private static final String SETTLEMENT_ENDPOINT = "/integration/finance/che/sellers/{sellerId}/settlements";
     
     private final TrendyolOrderRepository orderRepository;
     private final StoreRepository storeRepository;
-    private final TrendyolSettlementMapper settlementMapper;
+    private final TrendyolFinancialSettlementMapper settlementMapper;
     private final RestTemplate restTemplate;
 
     /**
@@ -168,16 +170,16 @@ public class TrendyolSettlementService {
                 log.info("Fetching {} settlements page {} of {} for store: {}", 
                     transactionType, currentPage + 1, totalPages, store.getId());
                 
-                ResponseEntity<TrendyolSettlementResponse> response = restTemplate.exchange(
+                ResponseEntity<TrendyolFinancialSettlementResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     entity,
-                    TrendyolSettlementResponse.class,
+                    TrendyolFinancialSettlementResponse.class,
                     credentials.getSellerId()
                 );
 
                 if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                    TrendyolSettlementResponse settlementResponse = response.getBody();
+                    TrendyolFinancialSettlementResponse settlementResponse = response.getBody();
                     
                     // Update totalPages from the first response
                     if (currentPage == 0) {
@@ -216,7 +218,7 @@ public class TrendyolSettlementService {
             transactionType, store.getId(), totalProcessed, currentPage);
     }
 
-    private void processSettlementResponse(Store store, TrendyolSettlementResponse response) {
+    private void processSettlementResponse(Store store, TrendyolFinancialSettlementResponse response) {
         if (response.getContent() == null || response.getContent().isEmpty()) {
             log.info("No settlements found in this page for store: {}", store.getId());
             return;
@@ -226,12 +228,12 @@ public class TrendyolSettlementService {
             response.getContent().size(), store.getId());
 
         // Separate different types of settlements for different processing logic
-        Map<String, List<TrendyolSettlementItem>> saleSettlements = new HashMap<>();
-        Map<String, List<TrendyolSettlementItem>> returnSettlements = new HashMap<>();
-        Map<String, List<TrendyolSettlementItem>> discountSettlements = new HashMap<>();
-        Map<String, List<TrendyolSettlementItem>> couponSettlements = new HashMap<>();
+        Map<String, List<TrendyolFinancialSettlementItem>> saleSettlements = new HashMap<>();
+        Map<String, List<TrendyolFinancialSettlementItem>> returnSettlements = new HashMap<>();
+        Map<String, List<TrendyolFinancialSettlementItem>> discountSettlements = new HashMap<>();
+        Map<String, List<TrendyolFinancialSettlementItem>> couponSettlements = new HashMap<>();
         
-        for (TrendyolSettlementItem item : response.getContent()) {
+        for (TrendyolFinancialSettlementItem item : response.getContent()) {
             String key = item.getOrderNumber() + "_" + item.getShipmentPackageId();
             
             if ("Satış".equals(item.getTransactionType()) || "Sale".equals(item.getTransactionType())) {
@@ -257,7 +259,7 @@ public class TrendyolSettlementService {
         int foundOrders = 0;
         
         // Process sale settlements (existing logic)
-        for (Map.Entry<String, List<TrendyolSettlementItem>> entry : saleSettlements.entrySet()) {
+        for (Map.Entry<String, List<TrendyolFinancialSettlementItem>> entry : saleSettlements.entrySet()) {
             String[] parts = entry.getKey().split("_");
             String orderNumber = parts[0];
             Long packageId = Long.valueOf(parts[1]);
@@ -275,7 +277,7 @@ public class TrendyolSettlementService {
         }
         
         // Process return settlements (special logic)
-        for (Map.Entry<String, List<TrendyolSettlementItem>> entry : returnSettlements.entrySet()) {
+        for (Map.Entry<String, List<TrendyolFinancialSettlementItem>> entry : returnSettlements.entrySet()) {
             String orderNumber = entry.getKey();
             
             try {
@@ -290,7 +292,7 @@ public class TrendyolSettlementService {
         }
         
         // Process discount settlements (use package ID like sales)
-        for (Map.Entry<String, List<TrendyolSettlementItem>> entry : discountSettlements.entrySet()) {
+        for (Map.Entry<String, List<TrendyolFinancialSettlementItem>> entry : discountSettlements.entrySet()) {
             String[] parts = entry.getKey().split("_");
             String orderNumber = parts[0];
             Long packageId = Long.valueOf(parts[1]);
@@ -308,7 +310,7 @@ public class TrendyolSettlementService {
         }
         
         // Process coupon settlements (use package ID like sales)
-        for (Map.Entry<String, List<TrendyolSettlementItem>> entry : couponSettlements.entrySet()) {
+        for (Map.Entry<String, List<TrendyolFinancialSettlementItem>> entry : couponSettlements.entrySet()) {
             String[] parts = entry.getKey().split("_");
             String orderNumber = parts[0];
             Long packageId = Long.valueOf(parts[1]);
@@ -330,7 +332,7 @@ public class TrendyolSettlementService {
     }
 
     private boolean updateOrderWithSettlements(Store store, String orderNumber, Long packageId, 
-                                          List<TrendyolSettlementItem> settlementItems) {
+                                          List<TrendyolFinancialSettlementItem> settlementItems) {
         
         // Find the order by order number, package ID and store
         Optional<TrendyolOrder> orderOptional = orderRepository
@@ -352,9 +354,9 @@ public class TrendyolSettlementService {
         }
 
         // Group settlements by barcode, but ONLY for this specific packageId
-        Map<String, List<TrendyolSettlementItem>> settlementsByBarcode = settlementItems.stream()
+        Map<String, List<TrendyolFinancialSettlementItem>> settlementsByBarcode = settlementItems.stream()
             .filter(item -> packageId.equals(item.getShipmentPackageId())) // Filter by package ID
-            .collect(Collectors.groupingBy(TrendyolSettlementItem::getBarcode));
+            .collect(Collectors.groupingBy(TrendyolFinancialSettlementItem::getBarcode));
 
         if (settlementsByBarcode.isEmpty()) {
             log.debug("No settlements found for package {} in order {}", packageId, orderNumber);
@@ -367,7 +369,7 @@ public class TrendyolSettlementService {
         // Update each order item with its corresponding settlements
         for (OrderItem orderItem : orderItems) {
             String barcode = orderItem.getBarcode();
-            List<TrendyolSettlementItem> itemSettlements = settlementsByBarcode.get(barcode);
+            List<TrendyolFinancialSettlementItem> itemSettlements = settlementsByBarcode.get(barcode);
             
             if (itemSettlements != null && !itemSettlements.isEmpty()) {
                 // Process settlements in a smart way: prefer returns over sales for status updates
@@ -383,7 +385,7 @@ public class TrendyolSettlementService {
         if (orderUpdated) {
             // Set transaction status and date based on settlements
             if (!settlementItems.isEmpty()) {
-                TrendyolSettlementItem firstSettlement = settlementItems.get(0);
+                TrendyolFinancialSettlementItem firstSettlement = settlementItems.get(0);
                 order.setTransactionDate(convertTimestampToLocalDateTime(firstSettlement.getTransactionDate()));
                 order.setTransactionStatus("SETTLED");
             }
@@ -405,7 +407,7 @@ public class TrendyolSettlementService {
     /**
      * Process settlements for a single order item with smart status management
      */
-    private boolean processItemSettlements(OrderItem orderItem, List<TrendyolSettlementItem> itemSettlements, 
+    private boolean processItemSettlements(OrderItem orderItem, List<TrendyolFinancialSettlementItem> itemSettlements, 
                                          String orderNumber, Long packageId) {
         
         // Initialize transactions list if null
@@ -416,13 +418,13 @@ public class TrendyolSettlementService {
         boolean itemUpdated = false;
         
         // Separate settlements by type to handle them intelligently
-        List<TrendyolSettlementItem> sales = new ArrayList<>();
-        List<TrendyolSettlementItem> returns = new ArrayList<>();
-        List<TrendyolSettlementItem> discounts = new ArrayList<>();
-        List<TrendyolSettlementItem> coupons = new ArrayList<>();
-        List<TrendyolSettlementItem> others = new ArrayList<>();
+        List<TrendyolFinancialSettlementItem> sales = new ArrayList<>();
+        List<TrendyolFinancialSettlementItem> returns = new ArrayList<>();
+        List<TrendyolFinancialSettlementItem> discounts = new ArrayList<>();
+        List<TrendyolFinancialSettlementItem> coupons = new ArrayList<>();
+        List<TrendyolFinancialSettlementItem> others = new ArrayList<>();
         
-        for (TrendyolSettlementItem settlement : itemSettlements) {
+        for (TrendyolFinancialSettlementItem settlement : itemSettlements) {
             String transactionType = settlement.getTransactionType();
             if ("Satış".equals(transactionType) || "Sale".equals(transactionType)) {
                 sales.add(settlement);
@@ -438,8 +440,8 @@ public class TrendyolSettlementService {
         }
 
         // First, add all sales as SOLD
-        for (TrendyolSettlementItem saleSettlement : sales) {
-            OrderItemSettlement settlement = settlementMapper.mapToOrderItemSettlement(saleSettlement);
+        for (TrendyolFinancialSettlementItem saleSettlement : sales) {
+            FinancialSettlement settlement = settlementMapper.mapToOrderItemSettlement(saleSettlement);
             
             // Check if this settlement already exists
             boolean exists = orderItem.getTransactions().stream()
@@ -455,8 +457,8 @@ public class TrendyolSettlementService {
         }
         
         // Then, handle returns - update existing SOLD transactions to RETURNED
-        for (TrendyolSettlementItem returnSettlement : returns) {
-            OrderItemSettlement returnSettlementObj = settlementMapper.mapToOrderItemSettlement(returnSettlement);
+        for (TrendyolFinancialSettlementItem returnSettlement : returns) {
+            FinancialSettlement returnSettlementObj = settlementMapper.mapToOrderItemSettlement(returnSettlement);
             
             // Check if this return settlement already exists
             boolean returnExists = orderItem.getTransactions().stream()
@@ -464,13 +466,13 @@ public class TrendyolSettlementService {
                 
             if (!returnExists) {
                 // Find a SOLD transaction to convert to RETURNED
-                Optional<OrderItemSettlement> soldTransaction = orderItem.getTransactions().stream()
+                Optional<FinancialSettlement> soldTransaction = orderItem.getTransactions().stream()
                     .filter(t -> "SOLD".equals(t.getStatus()) && t.getBarcode().equals(returnSettlement.getBarcode()))
                     .findFirst();
                 
                 if (soldTransaction.isPresent()) {
                     // Update existing SOLD transaction to RETURNED
-                    OrderItemSettlement existingTransaction = soldTransaction.get();
+                    FinancialSettlement existingTransaction = soldTransaction.get();
                     existingTransaction.setStatus("RETURNED");
                     existingTransaction.setTransactionType("İade");
                     // Keep original sale data but mark as returned
@@ -488,8 +490,8 @@ public class TrendyolSettlementService {
         }
         
         // Handle discount settlements (they reduce revenue)
-        for (TrendyolSettlementItem discountSettlement : discounts) {
-            OrderItemSettlement settlement = settlementMapper.mapToOrderItemSettlement(discountSettlement);
+        for (TrendyolFinancialSettlementItem discountSettlement : discounts) {
+            FinancialSettlement settlement = settlementMapper.mapToOrderItemSettlement(discountSettlement);
             
             boolean exists = orderItem.getTransactions().stream()
                 .anyMatch(existing -> existing.getId().equals(settlement.getId()));
@@ -504,8 +506,8 @@ public class TrendyolSettlementService {
         }
         
         // Handle coupon settlements (they also reduce revenue)
-        for (TrendyolSettlementItem couponSettlement : coupons) {
-            OrderItemSettlement settlement = settlementMapper.mapToOrderItemSettlement(couponSettlement);
+        for (TrendyolFinancialSettlementItem couponSettlement : coupons) {
+            FinancialSettlement settlement = settlementMapper.mapToOrderItemSettlement(couponSettlement);
             
             boolean exists = orderItem.getTransactions().stream()
                 .anyMatch(existing -> existing.getId().equals(settlement.getId()));
@@ -520,8 +522,8 @@ public class TrendyolSettlementService {
         }
         
         // Handle other transaction types
-        for (TrendyolSettlementItem otherSettlement : others) {
-            OrderItemSettlement settlement = settlementMapper.mapToOrderItemSettlement(otherSettlement);
+        for (TrendyolFinancialSettlementItem otherSettlement : others) {
+            FinancialSettlement settlement = settlementMapper.mapToOrderItemSettlement(otherSettlement);
             
             boolean exists = orderItem.getTransactions().stream()
                 .anyMatch(existing -> existing.getId().equals(settlement.getId()));
@@ -542,7 +544,7 @@ public class TrendyolSettlementService {
      * For returns, we find SOLD transactions and update their status to RETURNED.
      */
     private boolean updateOrderWithReturnSettlements(Store store, String orderNumber, 
-                                                   List<TrendyolSettlementItem> returnSettlements) {
+                                                   List<TrendyolFinancialSettlementItem> returnSettlements) {
         
         // Find all orders with this order number for the store
         List<TrendyolOrder> orders = orderRepository.findByStoreIdAndTyOrderNumber(store.getId(), orderNumber);
@@ -558,7 +560,7 @@ public class TrendyolSettlementService {
         // Group return settlements by barcode and count them
         Map<String, Integer> returnCountByBarcode = returnSettlements.stream()
             .collect(Collectors.groupingBy(
-                TrendyolSettlementItem::getBarcode,
+                TrendyolFinancialSettlementItem::getBarcode,
                 Collectors.summingInt(item -> 1)
             ));
 
@@ -600,11 +602,11 @@ public class TrendyolSettlementService {
                 }
                 
                 // Find SOLD transactions for this barcode and update them to RETURNED
-                List<OrderItemSettlement> soldTransactions = orderItem.getTransactions().stream()
+                List<FinancialSettlement> soldTransactions = orderItem.getTransactions().stream()
                     .filter(t -> "SOLD".equals(t.getStatus()) && barcode.equals(t.getBarcode()))
                     .collect(Collectors.toList());
                 
-                for (OrderItemSettlement soldTransaction : soldTransactions) {
+                for (FinancialSettlement soldTransaction : soldTransactions) {
                     if (soldTransactionsUpdated < totalReturnsForBarcode) {
                         soldTransaction.setStatus("RETURNED");
                         soldTransaction.setTransactionType("İade");
@@ -692,7 +694,7 @@ public class TrendyolSettlementService {
             if (order.getOrderItems() != null) {
                 for (OrderItem item : order.getOrderItems()) {
                     if (item.getTransactions() != null) {
-                        for (OrderItemSettlement transaction : item.getTransactions()) {
+                        for (FinancialSettlement transaction : item.getTransactions()) {
                             if ("Satış".equals(transaction.getTransactionType()) || "Sale".equals(transaction.getTransactionType())) {
                                 totalSaleTransactions++;
                                 if (transaction.getSellerRevenue() != null) {
@@ -723,9 +725,9 @@ public class TrendyolSettlementService {
     /**
      * Calculate transaction summary for an order item
      */
-    private OrderItemTransactionSummary calculateTransactionSummary(OrderItem orderItem) {
+    private FinancialOrderItemsTransactionSummary calculateTransactionSummary(OrderItem orderItem) {
         if (orderItem.getTransactions() == null || orderItem.getTransactions().isEmpty()) {
-            return OrderItemTransactionSummary.builder()
+            return FinancialOrderItemsTransactionSummary.builder()
                     .totalPrice(BigDecimal.ZERO)
                     .totalDiscount(BigDecimal.ZERO)
                     .totalCoupon(BigDecimal.ZERO)
@@ -748,7 +750,7 @@ public class TrendyolSettlementService {
         int returnedQuantity = 0;
         
         // First pass: count sold and returned quantities
-        for (OrderItemSettlement transaction : orderItem.getTransactions()) {
+        for (FinancialSettlement transaction : orderItem.getTransactions()) {
             String status = transaction.getStatus();
             if ("SOLD".equals(status)) {
                 soldQuantity++;
@@ -761,7 +763,7 @@ public class TrendyolSettlementService {
         int discountCount = 0;
         int couponCount = 0;
         
-        for (OrderItemSettlement transaction : orderItem.getTransactions()) {
+        for (FinancialSettlement transaction : orderItem.getTransactions()) {
             String status = transaction.getStatus();
             BigDecimal credit = transaction.getCredit() != null ? transaction.getCredit() : BigDecimal.ZERO;
             BigDecimal debt = transaction.getDebt() != null ? transaction.getDebt() : BigDecimal.ZERO;
@@ -801,7 +803,7 @@ public class TrendyolSettlementService {
         BigDecimal totalCommission = totalSoldCommission.subtract(totalDiscountCommission).subtract(totalCouponCommission);
         BigDecimal netAmount = finalPrice.subtract(totalCommission);
         
-        return OrderItemTransactionSummary.builder()
+        return FinancialOrderItemsTransactionSummary.builder()
                 .totalPrice(totalPrice)
                 .totalDiscount(totalDiscount)
                 .totalCoupon(totalCoupon)
@@ -823,12 +825,12 @@ public class TrendyolSettlementService {
         
         // Calculate individual order item summaries
         for (OrderItem orderItem : order.getOrderItems()) {
-            OrderItemTransactionSummary summary = calculateTransactionSummary(orderItem);
+            FinancialOrderItemsTransactionSummary summary = calculateTransactionSummary(orderItem);
             orderItem.setTransactionSummary(summary);
         }
         
         // Calculate order-level transaction summary
-        OrderTransactionSummary orderSummary = calculateOrderTransactionSummary(order);
+        FinancialOrderTransactionSummary orderSummary = calculateOrderTransactionSummary(order);
         order.setOrderTransactionSummary(orderSummary);
         
         log.debug("Updated transaction summaries for {} order items in order {}", 
@@ -838,9 +840,9 @@ public class TrendyolSettlementService {
     /**
      * Calculate order-level transaction summary by aggregating all order items
      */
-    private OrderTransactionSummary calculateOrderTransactionSummary(TrendyolOrder order) {
+    private FinancialOrderTransactionSummary calculateOrderTransactionSummary(TrendyolOrder order) {
         if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
-            return OrderTransactionSummary.builder()
+            return FinancialOrderTransactionSummary.builder()
                     .totalPrice(BigDecimal.ZERO)
                     .totalDiscount(BigDecimal.ZERO)
                     .totalCoupon(BigDecimal.ZERO)
@@ -866,7 +868,7 @@ public class TrendyolSettlementService {
         
         // Aggregate data from all order items
         for (OrderItem orderItem : order.getOrderItems()) {
-            OrderItemTransactionSummary itemSummary = orderItem.getTransactionSummary();
+            FinancialOrderItemsTransactionSummary itemSummary = orderItem.getTransactionSummary();
             if (itemSummary != null) {
                 totalPrice = totalPrice.add(itemSummary.getTotalPrice() != null ? itemSummary.getTotalPrice() : BigDecimal.ZERO);
                 totalDiscount = totalDiscount.add(itemSummary.getTotalDiscount() != null ? itemSummary.getTotalDiscount() : BigDecimal.ZERO);
@@ -880,7 +882,7 @@ public class TrendyolSettlementService {
             }
         }
         
-        return OrderTransactionSummary.builder()
+        return FinancialOrderTransactionSummary.builder()
                 .totalPrice(totalPrice)
                 .totalDiscount(totalDiscount)
                 .totalCoupon(totalCoupon)

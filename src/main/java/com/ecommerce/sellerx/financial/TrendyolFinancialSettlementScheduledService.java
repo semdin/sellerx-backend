@@ -1,4 +1,4 @@
-package com.ecommerce.sellerx.orders;
+package com.ecommerce.sellerx.financial;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,9 +8,9 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class TrendyolSettlementScheduledService {
+public class TrendyolFinancialSettlementScheduledService {
 
-    private final TrendyolSettlementService settlementService;
+    private final TrendyolFinancialSettlementService settlementService;
 
     /**
      * Automatically sync settlements for all stores every day at 2 AM

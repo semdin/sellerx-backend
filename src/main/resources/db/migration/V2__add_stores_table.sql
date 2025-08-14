@@ -1,4 +1,4 @@
-CREATE TABLE stores
+CREATE TABLE IF NOT EXISTS stores
 (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

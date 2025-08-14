@@ -1,4 +1,4 @@
-package com.ecommerce.sellerx.orders;
+package com.ecommerce.sellerx.financial;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderItemSettlement {
+public class FinancialSettlement {
     
     @JsonProperty("id")
     private String id; // Settlement transaction ID from Trendyol

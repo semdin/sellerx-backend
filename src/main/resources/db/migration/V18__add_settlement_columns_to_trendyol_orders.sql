@@ -7,14 +7,14 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                    WHERE table_name = 'trendyol_orders' 
                    AND column_name = 'transaction_date') THEN
-        ALTER TABLE trendyol_orders ADD COLUMN transaction_date TIMESTAMP;
+        ALTER TABLE trendyol_orders ADD COLUMN IF NOT EXISTS transaction_date TIMESTAMP;
     END IF;
     
     -- Add transaction_status column if it doesn't exist
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                    WHERE table_name = 'trendyol_orders' 
                    AND column_name = 'transaction_status') THEN
-        ALTER TABLE trendyol_orders ADD COLUMN transaction_status VARCHAR(50) DEFAULT 'NOT_SETTLED';
+        ALTER TABLE trendyol_orders ADD COLUMN IF NOT EXISTS transaction_status VARCHAR(50) DEFAULT 'NOT_SETTLED';
     END IF;
 END $$;
 

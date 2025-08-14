@@ -1,5 +1,5 @@
 -- Create trendyol_categories table
-CREATE TABLE trendyol_categories (
+CREATE TABLE IF NOT EXISTS trendyol_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     category_id BIGINT NOT NULL UNIQUE,
     category_name VARCHAR(500) NOT NULL,

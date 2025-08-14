@@ -1,5 +1,5 @@
 -- Create store_expenses table
-CREATE TABLE store_expenses (
+CREATE TABLE IF NOT EXISTS store_expenses (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     expense_category_id UUID NOT NULL,
     store_id UUID NOT NULL,

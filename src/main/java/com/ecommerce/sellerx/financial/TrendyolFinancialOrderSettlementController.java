@@ -1,4 +1,4 @@
-package com.ecommerce.sellerx.orders;
+package com.ecommerce.sellerx.financial;
 
 import com.ecommerce.sellerx.auth.JwtService;
 import com.ecommerce.sellerx.users.UserService;
@@ -16,9 +16,9 @@ import java.util.UUID;
 @RequestMapping("/api/settlements")
 @RequiredArgsConstructor
 @Slf4j
-public class TrendyolOrderSettlementController {
+public class TrendyolFinancialOrderSettlementController {
 
-    private final TrendyolSettlementService settlementService;
+    private final TrendyolFinancialSettlementService settlementService;
     private final JwtService jwtService;
     private final UserService userService;
 

@@ -1,5 +1,5 @@
 -- Create trendyol_orders table for storing Trendyol order data
-CREATE TABLE trendyol_orders (
+CREATE TABLE IF NOT EXISTS trendyol_orders (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     store_id UUID NOT NULL,
     ty_order_number VARCHAR(255) NOT NULL,

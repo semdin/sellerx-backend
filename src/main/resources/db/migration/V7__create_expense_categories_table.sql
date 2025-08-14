@@ -1,5 +1,5 @@
 -- Create expense_categories table
-CREATE TABLE expense_categories (
+CREATE TABLE IF NOT EXISTS expense_categories (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

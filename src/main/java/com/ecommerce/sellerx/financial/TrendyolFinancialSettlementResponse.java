@@ -1,4 +1,4 @@
-package com.ecommerce.sellerx.orders;
+package com.ecommerce.sellerx.financial;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
@@ -9,7 +9,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TrendyolSettlementResponse {
+public class TrendyolFinancialSettlementResponse {
     
     @JsonProperty("page")
     private Integer page;
@@ -24,5 +24,5 @@ public class TrendyolSettlementResponse {
     private Long totalElements;
     
     @JsonProperty("content")
-    private List<TrendyolSettlementItem> content;
+    private List<TrendyolFinancialSettlementItem> content;
 }

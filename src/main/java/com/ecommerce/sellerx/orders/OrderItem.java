@@ -1,5 +1,7 @@
 package com.ecommerce.sellerx.orders;
 
+import com.ecommerce.sellerx.financial.FinancialSettlement;
+import com.ecommerce.sellerx.financial.FinancialOrderItemsTransactionSummary;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -61,9 +63,9 @@ public class OrderItem {
     // Settlement transactions for this specific product
     @JsonProperty("transactions")
     @Builder.Default
-    private List<OrderItemSettlement> transactions = new java.util.ArrayList<>();
+    private List<FinancialSettlement> transactions = new java.util.ArrayList<>();
     
     // Financial summary of all transactions
     @JsonProperty("transactionSummary")
-    private OrderItemTransactionSummary transactionSummary;
+    private FinancialOrderItemsTransactionSummary transactionSummary;
 }

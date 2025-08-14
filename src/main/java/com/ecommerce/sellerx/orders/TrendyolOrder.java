@@ -1,5 +1,6 @@
 package com.ecommerce.sellerx.orders;
 
+import com.ecommerce.sellerx.financial.FinancialOrderTransactionSummary;
 import com.ecommerce.sellerx.stores.Store;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
@@ -94,7 +95,7 @@ public class TrendyolOrder {
     
     // Financial summary of all order items (calculated field, not stored in DB)
     @Transient
-    private OrderTransactionSummary orderTransactionSummary;
+    private FinancialOrderTransactionSummary orderTransactionSummary;
     
     @PreUpdate
     public void preUpdate() {

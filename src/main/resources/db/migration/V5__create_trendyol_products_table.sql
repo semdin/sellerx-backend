@@ -1,5 +1,5 @@
 -- Create trendyol_products table
-CREATE TABLE trendyol_products (
+CREATE TABLE IF NOT EXISTS trendyol_products (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     store_id UUID NOT NULL,
     product_id VARCHAR(255) NOT NULL,

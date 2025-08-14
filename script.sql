@@ -1,4 +1,4 @@
-create table users
+CREATE TABLE IF NOT EXISTS users
 (
     id       bigint auto_increment
         primary key,
@@ -7,7 +7,7 @@ create table users
     password varchar(255) not null
 );
 
-create table addresses
+CREATE TABLE IF NOT EXISTS addresses
 (
     id      bigint auto_increment
         primary key,
