@@ -1,6 +1,7 @@
 package com.ecommerce.sellerx.orders;
 
 import com.ecommerce.sellerx.financial.FinancialOrderTransactionSummary;
+import com.ecommerce.sellerx.financial.FinancialOrderItemData;
 import com.ecommerce.sellerx.stores.Store;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
@@ -56,6 +57,11 @@ public class TrendyolOrder {
     @Column(name = "order_items", columnDefinition = "jsonb", nullable = false)
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
+    
+    @Type(JsonBinaryType.class)
+    @Column(name = "financial_transactions", columnDefinition = "jsonb")
+    @Builder.Default
+    private List<FinancialOrderItemData> financialTransactions = new ArrayList<>();
     
     @Column(name = "shipment_package_status")
     private String shipmentPackageStatus;

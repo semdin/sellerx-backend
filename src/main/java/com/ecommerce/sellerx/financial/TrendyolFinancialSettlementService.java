@@ -353,6 +353,11 @@ public class TrendyolFinancialSettlementService {
             return false;
         }
 
+        // Initialize financial transactions list if null
+        if (order.getFinancialTransactions() == null) {
+            order.setFinancialTransactions(new ArrayList<>());
+        }
+
         // Group settlements by barcode, but ONLY for this specific packageId
         Map<String, List<TrendyolFinancialSettlementItem>> settlementsByBarcode = settlementItems.stream()
             .filter(item -> packageId.equals(item.getShipmentPackageId())) // Filter by package ID
@@ -372,8 +377,8 @@ public class TrendyolFinancialSettlementService {
             List<TrendyolFinancialSettlementItem> itemSettlements = settlementsByBarcode.get(barcode);
             
             if (itemSettlements != null && !itemSettlements.isEmpty()) {
-                // Process settlements in a smart way: prefer returns over sales for status updates
-                boolean itemUpdated = processItemSettlements(orderItem, itemSettlements, orderNumber, packageId);
+                // Process settlements for this order item in financial transactions
+                boolean itemUpdated = processItemFinancialSettlements(order, orderItem, itemSettlements, orderNumber, packageId);
                 
                 if (itemUpdated) {
                     itemsWithSettlements++;
@@ -390,8 +395,8 @@ public class TrendyolFinancialSettlementService {
                 order.setTransactionStatus("SETTLED");
             }
 
-            // Calculate transaction summaries for all order items
-            updateTransactionSummaries(order);
+            // Calculate transaction summaries for all financial transactions
+            updateFinancialTransactionSummaries(order);
 
             orderRepository.save(order);
             
@@ -406,13 +411,27 @@ public class TrendyolFinancialSettlementService {
 
     /**
      * Process settlements for a single order item with smart status management
+     * Works with the new financial_transactions column instead of order_items transactions
      */
-    private boolean processItemSettlements(OrderItem orderItem, List<TrendyolFinancialSettlementItem> itemSettlements, 
-                                         String orderNumber, Long packageId) {
+    private boolean processItemFinancialSettlements(TrendyolOrder order, OrderItem orderItem, 
+                                                   List<TrendyolFinancialSettlementItem> itemSettlements, 
+                                                   String orderNumber, Long packageId) {
         
-        // Initialize transactions list if null
-        if (orderItem.getTransactions() == null) {
-            orderItem.setTransactions(new ArrayList<>());
+        String barcode = orderItem.getBarcode();
+        
+        // Find existing financial item data for this barcode
+        FinancialOrderItemData financialItemData = order.getFinancialTransactions().stream()
+            .filter(item -> barcode.equals(item.getBarcode()))
+            .findFirst()
+            .orElse(null);
+        
+        // Create new financial item data if it doesn't exist
+        if (financialItemData == null) {
+            financialItemData = FinancialOrderItemData.builder()
+                .barcode(barcode)
+                .transactions(new ArrayList<>())
+                .build();
+            order.getFinancialTransactions().add(financialItemData);
         }
 
         boolean itemUpdated = false;
@@ -444,15 +463,15 @@ public class TrendyolFinancialSettlementService {
             FinancialSettlement settlement = settlementMapper.mapToOrderItemSettlement(saleSettlement);
             
             // Check if this settlement already exists
-            boolean exists = orderItem.getTransactions().stream()
+            boolean exists = financialItemData.getTransactions().stream()
                 .anyMatch(existing -> existing.getId().equals(settlement.getId()));
                 
             if (!exists) {
                 settlement.setStatus("SOLD");
-                orderItem.getTransactions().add(settlement);
+                financialItemData.getTransactions().add(settlement);
                 itemUpdated = true;
                 log.debug("Added SOLD settlement {} for product {} in order {} package {}", 
-                    settlement.getId(), orderItem.getBarcode(), orderNumber, packageId);
+                    settlement.getId(), barcode, orderNumber, packageId);
             }
         }
         
@@ -461,12 +480,12 @@ public class TrendyolFinancialSettlementService {
             FinancialSettlement returnSettlementObj = settlementMapper.mapToOrderItemSettlement(returnSettlement);
             
             // Check if this return settlement already exists
-            boolean returnExists = orderItem.getTransactions().stream()
+            boolean returnExists = financialItemData.getTransactions().stream()
                 .anyMatch(existing -> existing.getId().equals(returnSettlementObj.getId()));
                 
             if (!returnExists) {
                 // Find a SOLD transaction to convert to RETURNED
-                Optional<FinancialSettlement> soldTransaction = orderItem.getTransactions().stream()
+                Optional<FinancialSettlement> soldTransaction = financialItemData.getTransactions().stream()
                     .filter(t -> "SOLD".equals(t.getStatus()) && t.getBarcode().equals(returnSettlement.getBarcode()))
                     .findFirst();
                 
@@ -477,13 +496,13 @@ public class TrendyolFinancialSettlementService {
                     existingTransaction.setTransactionType("İade");
                     // Keep original sale data but mark as returned
                     log.info("Updated transaction {} from SOLD to RETURNED for product {} in order {} package {}", 
-                        existingTransaction.getId(), orderItem.getBarcode(), orderNumber, packageId);
+                        existingTransaction.getId(), barcode, orderNumber, packageId);
                 } else {
                     // No SOLD transaction found, add as new RETURNED transaction
                     returnSettlementObj.setStatus("RETURNED");
-                    orderItem.getTransactions().add(returnSettlementObj);
+                    financialItemData.getTransactions().add(returnSettlementObj);
                     log.info("Added new RETURNED settlement {} for product {} in order {} package {}", 
-                        returnSettlementObj.getId(), orderItem.getBarcode(), orderNumber, packageId);
+                        returnSettlementObj.getId(), barcode, orderNumber, packageId);
                 }
                 itemUpdated = true;
             }
@@ -493,15 +512,15 @@ public class TrendyolFinancialSettlementService {
         for (TrendyolFinancialSettlementItem discountSettlement : discounts) {
             FinancialSettlement settlement = settlementMapper.mapToOrderItemSettlement(discountSettlement);
             
-            boolean exists = orderItem.getTransactions().stream()
+            boolean exists = financialItemData.getTransactions().stream()
                 .anyMatch(existing -> existing.getId().equals(settlement.getId()));
                 
             if (!exists) {
                 settlement.setStatus("DISCOUNT");
-                orderItem.getTransactions().add(settlement);
+                financialItemData.getTransactions().add(settlement);
                 itemUpdated = true;
                 log.debug("Added DISCOUNT settlement {} for product {} in order {} package {}", 
-                    settlement.getId(), orderItem.getBarcode(), orderNumber, packageId);
+                    settlement.getId(), barcode, orderNumber, packageId);
             }
         }
         
@@ -509,15 +528,15 @@ public class TrendyolFinancialSettlementService {
         for (TrendyolFinancialSettlementItem couponSettlement : coupons) {
             FinancialSettlement settlement = settlementMapper.mapToOrderItemSettlement(couponSettlement);
             
-            boolean exists = orderItem.getTransactions().stream()
+            boolean exists = financialItemData.getTransactions().stream()
                 .anyMatch(existing -> existing.getId().equals(settlement.getId()));
                 
             if (!exists) {
                 settlement.setStatus("COUPON");
-                orderItem.getTransactions().add(settlement);
+                financialItemData.getTransactions().add(settlement);
                 itemUpdated = true;
                 log.debug("Added COUPON settlement {} for product {} in order {} package {}", 
-                    settlement.getId(), orderItem.getBarcode(), orderNumber, packageId);
+                    settlement.getId(), barcode, orderNumber, packageId);
             }
         }
         
@@ -525,14 +544,14 @@ public class TrendyolFinancialSettlementService {
         for (TrendyolFinancialSettlementItem otherSettlement : others) {
             FinancialSettlement settlement = settlementMapper.mapToOrderItemSettlement(otherSettlement);
             
-            boolean exists = orderItem.getTransactions().stream()
+            boolean exists = financialItemData.getTransactions().stream()
                 .anyMatch(existing -> existing.getId().equals(settlement.getId()));
                 
             if (!exists) {
-                orderItem.getTransactions().add(settlement);
+                financialItemData.getTransactions().add(settlement);
                 itemUpdated = true;
                 log.debug("Added {} settlement {} for product {} in order {} package {}", 
-                    settlement.getStatus(), settlement.getId(), orderItem.getBarcode(), orderNumber, packageId);
+                    settlement.getStatus(), settlement.getId(), barcode, orderNumber, packageId);
             }
         }
         
@@ -541,7 +560,7 @@ public class TrendyolFinancialSettlementService {
 
     /**
      * Update orders with return settlements.
-     * For returns, we find SOLD transactions and update their status to RETURNED.
+     * For returns, we find SOLD transactions in financial_transactions and update their status to RETURNED.
      */
     private boolean updateOrderWithReturnSettlements(Store store, String orderNumber, 
                                                    List<TrendyolFinancialSettlementItem> returnSettlements) {
@@ -586,35 +605,42 @@ public class TrendyolFinancialSettlementService {
                 continue;
             }
             
-            // Calculate total quantity and SOLD transactions for this barcode
+            // Calculate total quantity for this barcode
             int totalQuantityForBarcode = matchingOrderItems.stream()
                 .mapToInt(OrderItem::getQuantity)
                 .sum();
                 
             log.info("Total quantity for barcode {} in order {}: {}", barcode, orderNumber, totalQuantityForBarcode);
             
-            // Count existing SOLD transactions
+            // Count existing SOLD transactions from financial_transactions and update them to RETURNED
             int soldTransactionsUpdated = 0;
             
-            for (OrderItem orderItem : matchingOrderItems) {
-                if (orderItem.getTransactions() == null) {
+            for (TrendyolOrder order : orders) {
+                if (order.getFinancialTransactions() == null) {
                     continue;
                 }
                 
-                // Find SOLD transactions for this barcode and update them to RETURNED
-                List<FinancialSettlement> soldTransactions = orderItem.getTransactions().stream()
-                    .filter(t -> "SOLD".equals(t.getStatus()) && barcode.equals(t.getBarcode()))
-                    .collect(Collectors.toList());
+                // Find financial item data for this barcode
+                Optional<FinancialOrderItemData> financialItemData = order.getFinancialTransactions().stream()
+                    .filter(item -> barcode.equals(item.getBarcode()))
+                    .findFirst();
                 
-                for (FinancialSettlement soldTransaction : soldTransactions) {
-                    if (soldTransactionsUpdated < totalReturnsForBarcode) {
-                        soldTransaction.setStatus("RETURNED");
-                        soldTransaction.setTransactionType("İade");
-                        soldTransactionsUpdated++;
-                        anyOrderUpdated = true;
-                        
-                        log.info("Updated transaction {} from SOLD to RETURNED for barcode {} in order {}", 
-                            soldTransaction.getId(), barcode, orderNumber);
+                if (financialItemData.isPresent() && financialItemData.get().getTransactions() != null) {
+                    // Find SOLD transactions for this barcode and update them to RETURNED
+                    List<FinancialSettlement> soldTransactions = financialItemData.get().getTransactions().stream()
+                        .filter(t -> "SOLD".equals(t.getStatus()) && barcode.equals(t.getBarcode()))
+                        .collect(Collectors.toList());
+                    
+                    for (FinancialSettlement soldTransaction : soldTransactions) {
+                        if (soldTransactionsUpdated < totalReturnsForBarcode) {
+                            soldTransaction.setStatus("RETURNED");
+                            soldTransaction.setTransactionType("İade");
+                            soldTransactionsUpdated++;
+                            anyOrderUpdated = true;
+                            
+                            log.info("Updated transaction {} from SOLD to RETURNED for barcode {} in order {}", 
+                                soldTransaction.getId(), barcode, orderNumber);
+                        }
                     }
                 }
             }
@@ -630,8 +656,8 @@ public class TrendyolFinancialSettlementService {
                     order.setTransactionStatus("SETTLED");
                 }
                 
-                // Calculate transaction summaries for all order items
-                updateTransactionSummaries(order);
+                // Calculate transaction summaries for all financial transactions
+                updateFinancialTransactionSummaries(order);
                 
                 orderRepository.save(order);
             }
@@ -681,6 +707,7 @@ public class TrendyolFinancialSettlementService {
 
     /**
      * Get detailed transaction statistics (sales vs returns)
+     * Uses financial_transactions instead of order_items transactions
      */
     private Map<String, Object> getTransactionStatistics(Store store) {
         List<TrendyolOrder> settledOrders = orderRepository.findByStoreAndTransactionStatus(store, "SETTLED");
@@ -691,10 +718,10 @@ public class TrendyolFinancialSettlementService {
         double totalReturnAmount = 0.0;
         
         for (TrendyolOrder order : settledOrders) {
-            if (order.getOrderItems() != null) {
-                for (OrderItem item : order.getOrderItems()) {
-                    if (item.getTransactions() != null) {
-                        for (FinancialSettlement transaction : item.getTransactions()) {
+            if (order.getFinancialTransactions() != null) {
+                for (FinancialOrderItemData financialItem : order.getFinancialTransactions()) {
+                    if (financialItem.getTransactions() != null) {
+                        for (FinancialSettlement transaction : financialItem.getTransactions()) {
                             if ("Satış".equals(transaction.getTransactionType()) || "Sale".equals(transaction.getTransactionType())) {
                                 totalSaleTransactions++;
                                 if (transaction.getSellerRevenue() != null) {
@@ -723,8 +750,181 @@ public class TrendyolFinancialSettlementService {
     }
     
     /**
-     * Calculate transaction summary for an order item
+     * Calculate transaction summary for a financial order item data
      */
+    private FinancialOrderItemsTransactionSummary calculateFinancialTransactionSummary(FinancialOrderItemData financialItemData) {
+        if (financialItemData.getTransactions() == null || financialItemData.getTransactions().isEmpty()) {
+            return FinancialOrderItemsTransactionSummary.builder()
+                    .totalPrice(BigDecimal.ZERO)
+                    .totalDiscount(BigDecimal.ZERO)
+                    .totalCoupon(BigDecimal.ZERO)
+                    .totalCommission(BigDecimal.ZERO)
+                    .finalPrice(BigDecimal.ZERO)
+                    .netAmount(BigDecimal.ZERO)
+                    .soldQuantity(0)
+                    .returnedQuantity(0)
+                    .build();
+        }
+        
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        BigDecimal totalDiscount = BigDecimal.ZERO;
+        BigDecimal totalCoupon = BigDecimal.ZERO;
+        BigDecimal totalSoldCommission = BigDecimal.ZERO;
+        BigDecimal totalDiscountCommission = BigDecimal.ZERO;
+        BigDecimal totalCouponCommission = BigDecimal.ZERO;
+        
+        int soldQuantity = 0;
+        int returnedQuantity = 0;
+        
+        // First pass: count sold and returned quantities
+        for (FinancialSettlement transaction : financialItemData.getTransactions()) {
+            String status = transaction.getStatus();
+            if ("SOLD".equals(status)) {
+                soldQuantity++;
+            } else if ("RETURNED".equals(status)) {
+                returnedQuantity++;
+            }
+        }
+        
+        // Second pass: calculate financial values based on sold quantity
+        int discountCount = 0;
+        int couponCount = 0;
+        
+        for (FinancialSettlement transaction : financialItemData.getTransactions()) {
+            String status = transaction.getStatus();
+            BigDecimal credit = transaction.getCredit() != null ? transaction.getCredit() : BigDecimal.ZERO;
+            BigDecimal debt = transaction.getDebt() != null ? transaction.getDebt() : BigDecimal.ZERO;
+            BigDecimal commissionAmount = transaction.getCommissionAmount() != null ? transaction.getCommissionAmount() : BigDecimal.ZERO;
+            
+            switch (status) {
+                case "SOLD":
+                    totalPrice = totalPrice.add(credit);
+                    totalSoldCommission = totalSoldCommission.add(commissionAmount);
+                    break;
+                case "RETURNED":
+                    // Don't count returned items in financial calculations
+                    break;
+                case "DISCOUNT":
+                    // Count discounts up to sold quantity (not net active quantity)
+                    if (discountCount < soldQuantity) {
+                        totalDiscount = totalDiscount.add(debt);
+                        totalDiscountCommission = totalDiscountCommission.add(commissionAmount);
+                        discountCount++;
+                    }
+                    break;
+                case "COUPON":
+                    // Count coupons up to sold quantity (not net active quantity)
+                    if (couponCount < soldQuantity) {
+                        totalCoupon = totalCoupon.add(debt);
+                        totalCouponCommission = totalCouponCommission.add(commissionAmount);
+                        couponCount++;
+                    }
+                    break;
+            }
+        }
+        
+        // Calculate net values
+        BigDecimal finalPrice = totalPrice.subtract(totalDiscount).subtract(totalCoupon);
+        BigDecimal totalCommission = totalSoldCommission.subtract(totalDiscountCommission).subtract(totalCouponCommission);
+        BigDecimal netAmount = finalPrice.subtract(totalCommission);
+        
+        return FinancialOrderItemsTransactionSummary.builder()
+                .totalPrice(totalPrice)
+                .totalDiscount(totalDiscount)
+                .totalCoupon(totalCoupon)
+                .totalCommission(totalCommission)
+                .finalPrice(finalPrice)
+                .netAmount(netAmount)
+                .soldQuantity(soldQuantity)
+                .returnedQuantity(returnedQuantity)
+                .build();
+    }
+    
+    /**
+     * Update transaction summaries for all financial transactions
+     */
+    private void updateFinancialTransactionSummaries(TrendyolOrder order) {
+        if (order.getFinancialTransactions() == null || order.getFinancialTransactions().isEmpty()) {
+            return;
+        }
+        
+        // Calculate individual financial item summaries
+        for (FinancialOrderItemData financialItemData : order.getFinancialTransactions()) {
+            FinancialOrderItemsTransactionSummary summary = calculateFinancialTransactionSummary(financialItemData);
+            financialItemData.setTransactionSummary(summary);
+        }
+        
+        // Calculate order-level transaction summary
+        FinancialOrderTransactionSummary orderSummary = calculateFinancialOrderTransactionSummary(order);
+        order.setOrderTransactionSummary(orderSummary);
+        
+        log.debug("Updated financial transaction summaries for {} financial items in order {}", 
+            order.getFinancialTransactions().size(), order.getTyOrderNumber());
+    }
+    
+    /**
+     * Calculate order-level transaction summary by aggregating all financial transactions
+     */
+    private FinancialOrderTransactionSummary calculateFinancialOrderTransactionSummary(TrendyolOrder order) {
+        if (order.getFinancialTransactions() == null || order.getFinancialTransactions().isEmpty()) {
+            return FinancialOrderTransactionSummary.builder()
+                    .totalPrice(BigDecimal.ZERO)
+                    .totalDiscount(BigDecimal.ZERO)
+                    .totalCoupon(BigDecimal.ZERO)
+                    .totalCommission(BigDecimal.ZERO)
+                    .finalPrice(BigDecimal.ZERO)
+                    .netAmount(BigDecimal.ZERO)
+                    .totalSoldQuantity(0)
+                    .totalReturnedQuantity(0)
+                    .uniqueProductCount(0)
+                    .build();
+        }
+        
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        BigDecimal totalDiscount = BigDecimal.ZERO;
+        BigDecimal totalCoupon = BigDecimal.ZERO;
+        BigDecimal totalCommission = BigDecimal.ZERO;
+        BigDecimal finalPrice = BigDecimal.ZERO;
+        BigDecimal netAmount = BigDecimal.ZERO;
+        
+        int totalSoldQuantity = 0;
+        int totalReturnedQuantity = 0;
+        int uniqueProductCount = order.getFinancialTransactions().size();
+        
+        // Aggregate data from all financial items
+        for (FinancialOrderItemData financialItem : order.getFinancialTransactions()) {
+            FinancialOrderItemsTransactionSummary itemSummary = financialItem.getTransactionSummary();
+            if (itemSummary != null) {
+                totalPrice = totalPrice.add(itemSummary.getTotalPrice() != null ? itemSummary.getTotalPrice() : BigDecimal.ZERO);
+                totalDiscount = totalDiscount.add(itemSummary.getTotalDiscount() != null ? itemSummary.getTotalDiscount() : BigDecimal.ZERO);
+                totalCoupon = totalCoupon.add(itemSummary.getTotalCoupon() != null ? itemSummary.getTotalCoupon() : BigDecimal.ZERO);
+                totalCommission = totalCommission.add(itemSummary.getTotalCommission() != null ? itemSummary.getTotalCommission() : BigDecimal.ZERO);
+                finalPrice = finalPrice.add(itemSummary.getFinalPrice() != null ? itemSummary.getFinalPrice() : BigDecimal.ZERO);
+                netAmount = netAmount.add(itemSummary.getNetAmount() != null ? itemSummary.getNetAmount() : BigDecimal.ZERO);
+                
+                totalSoldQuantity += itemSummary.getSoldQuantity() != null ? itemSummary.getSoldQuantity() : 0;
+                totalReturnedQuantity += itemSummary.getReturnedQuantity() != null ? itemSummary.getReturnedQuantity() : 0;
+            }
+        }
+        
+        return FinancialOrderTransactionSummary.builder()
+                .totalPrice(totalPrice)
+                .totalDiscount(totalDiscount)
+                .totalCoupon(totalCoupon)
+                .totalCommission(totalCommission)
+                .finalPrice(finalPrice)
+                .netAmount(netAmount)
+                .totalSoldQuantity(totalSoldQuantity)
+                .totalReturnedQuantity(totalReturnedQuantity)
+                .uniqueProductCount(uniqueProductCount)
+                .build();
+    }
+    
+    /**
+     * Calculate transaction summary for an order item
+     * @deprecated Use calculateFinancialTransactionSummary instead
+     */
+    @Deprecated
     private FinancialOrderItemsTransactionSummary calculateTransactionSummary(OrderItem orderItem) {
         if (orderItem.getTransactions() == null || orderItem.getTransactions().isEmpty()) {
             return FinancialOrderItemsTransactionSummary.builder()
@@ -817,7 +1017,9 @@ public class TrendyolFinancialSettlementService {
     
     /**
      * Update transaction summaries for all order items
+     * @deprecated Use updateFinancialTransactionSummaries instead
      */
+    @Deprecated
     private void updateTransactionSummaries(TrendyolOrder order) {
         if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
             return;
@@ -839,7 +1041,9 @@ public class TrendyolFinancialSettlementService {
     
     /**
      * Calculate order-level transaction summary by aggregating all order items
+     * @deprecated Use calculateFinancialOrderTransactionSummary instead
      */
+    @Deprecated
     private FinancialOrderTransactionSummary calculateOrderTransactionSummary(TrendyolOrder order) {
         if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
             return FinancialOrderTransactionSummary.builder()
